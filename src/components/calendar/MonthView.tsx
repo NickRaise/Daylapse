@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import DayCell from './DayCell';
+import { colors, fontSize, spacing } from '../../theme';
 import {
   NUM_COLUMNS,
   CELL_GAP,
@@ -73,19 +74,19 @@ const MonthView = memo(function MonthView({
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: MONTH_H_PADDING,
-    paddingBottom: 32,
+    paddingBottom: spacing[8],
   },
   title: {
-    fontSize: 30,
+    fontSize: fontSize['2xl'],
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: colors.textPrimary,
     lineHeight: 38,
-    marginTop: 12,
+    marginTop: spacing[3],
     marginBottom: 14,
     letterSpacing: -0.5,
   },
   titleYear: {
-    color: '#444444',
+    color: colors.textMuted,
     fontWeight: '400',
   },
   grid: {

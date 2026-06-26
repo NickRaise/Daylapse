@@ -1,6 +1,7 @@
 import React, { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { CELL_SIZE } from './layout';
+import { colors, radius } from '../../theme';
 
 type DayCellProps = {
   day: number;
@@ -31,7 +32,7 @@ const DayCell = memo(function DayCell({
       ]}
       onPress={() => onPress(dateKey)}
       onLongPress={() => onLongPress(dateKey)}
-      android_ripple={{ color: 'rgba(255,255,255,0.12)', radius: CELL_SIZE / 2 }}
+      android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
     >
       <Text
         style={[
@@ -61,23 +62,23 @@ const DayCell = memo(function DayCell({
 const styles = StyleSheet.create({
   cell: {
     width: CELL_SIZE,
-    height: CELL_SIZE, // square
-    borderRadius: 14,
+    height: CELL_SIZE,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pastCell: { backgroundColor: '#1A1A1A' },
-  todayCell: { backgroundColor: '#FF6B35' },
-  futureCell: { backgroundColor: '#0C0C0C' },
+  pastCell:   { backgroundColor: colors.bgSurface },
+  todayCell:  { backgroundColor: colors.primary },
+  futureCell: { backgroundColor: colors.bgSubtle },
 
   dayNum: {
-    fontSize: CELL_SIZE * 0.24, // scales with cell size
+    fontSize: CELL_SIZE * 0.24,
     fontWeight: '700',
     letterSpacing: -0.5,
   },
-  pastText: { color: '#EBEBEB' },
-  todayText: { color: '#FFFFFF' },
-  futureText: { color: '#252525' },
+  pastText:   { color: colors.textPrimary },
+  todayText:  { color: colors.textOnAccent },
+  futureText: { color: colors.textDisabled },
 
   weekday: {
     fontSize: CELL_SIZE * 0.11,
@@ -86,15 +87,15 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  pastWeekday: { color: '#555555' },
-  todayWeekday: { color: 'rgba(255,255,255,0.7)' },
-  futureWeekday: { color: '#1E1E1E' },
+  pastWeekday:   { color: colors.textMuted },
+  todayWeekday:  { color: 'rgba(255,255,255,0.7)' },
+  futureWeekday: { color: colors.bgElevated },
 
   plus: {
     position: 'absolute',
     bottom: CELL_SIZE * 0.1,
     fontSize: CELL_SIZE * 0.13,
-    color: '#2A2A2A',
+    color: colors.bgElevated,
   },
 });
 

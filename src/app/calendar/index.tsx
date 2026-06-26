@@ -8,20 +8,21 @@ import {
   StatusBar,
   LayoutChangeEvent,
 } from "react-native";
-import MonthView from "../components/calendar/MonthView";
+import MonthView from "../../components/calendar/MonthView";
 import {
   NUM_COLUMNS,
   CELL_SIZE,
   CELL_GAP,
   MONTH_HEADER_HEIGHT,
   computeMonthHeight,
-} from "../components/calendar/layout";
+} from "../../components/calendar/layout";
+import { colors } from "../../theme";
 import {
   generateMonths,
   getTodayKey,
   getTodayTimestamp,
   type MonthData,
-} from "../components/calendar/utils";
+} from "../../components/calendar/utils";
 
 const RANGE = 200; // ±200 months from today
 
@@ -51,7 +52,8 @@ export default function CalendarScreen() {
     const rowH = CELL_SIZE + CELL_GAP;
 
     // Absolute Y of today's row top inside the full list
-    const todayRowY = offsets[RANGE] + MONTH_HEADER_HEIGHT + todayRowIndex * rowH;
+    const todayRowY =
+      offsets[RANGE] + MONTH_HEADER_HEIGHT + todayRowIndex * rowH;
 
     // Position today such that 2 full rows remain visible below it
     const targetOffset = Math.max(0, todayRowY - containerH + 3 * rowH);
@@ -116,7 +118,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.root} onLayout={onContainerLayout}>
-      <StatusBar barStyle="light-content" backgroundColor="#000000" />
+      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
       <FlatList
         ref={listRef}
         data={months}
@@ -138,6 +140,6 @@ export default function CalendarScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: "#000000",
+    backgroundColor: colors.bg,
   },
 });
