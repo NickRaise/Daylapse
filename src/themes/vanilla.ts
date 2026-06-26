@@ -21,7 +21,8 @@ export const vanilla: Theme = {
     textSecondary: '#8A7465',
     textMuted:     '#A89080',
     textDisabled:  '#C8B8A8',
-    textOnAccent:  '#FFFFFF',
+    textOnAccent:    '#FFFFFF',
+    textOnAccentDim: 'rgba(255,255,255,0.65)',
 
     border:      '#D4CCB0',
     borderFocus: '#A98467',

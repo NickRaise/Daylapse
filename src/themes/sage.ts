@@ -14,14 +14,15 @@ export const sage: Theme = {
 
     bg:           '#FEFAE0',  // Cornsilk
     bgSurface:    '#FFFFFF',
-    bgElevated:   '#FAEDCD',  // Papaya Whip
-    bgSubtle:     '#E9EDC9',  // Beige
+    bgElevated:   '#C2B7A8',
+    bgSubtle:     '#F3E9D2',
 
     textPrimary:   '#3F3428',
     textSecondary: '#6F6558',
     textMuted:     '#9B9288',
-    textDisabled:  '#C5BEB5',
-    textOnAccent:  '#FFFFFF',
+    textDisabled:  '#8A8178',
+    textOnAccent:    '#FFFFFF',
+    textOnAccentDim: 'rgba(255,255,255,0.65)',
 
     border:      '#E4DFC8',
     borderFocus: '#D4A373',

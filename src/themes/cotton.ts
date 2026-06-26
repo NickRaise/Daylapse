@@ -21,7 +21,8 @@ export const cotton: Theme = {
     textSecondary: '#6E7F81',
     textMuted:     '#95A5A6',
     textDisabled:  '#C4CCCD',
-    textOnAccent:  '#FFFFFF',
+    textOnAccent:    '#FFFFFF',
+    textOnAccentDim: 'rgba(255,255,255,0.65)',
 
     border:      'rgba(176,196,177,0.4)',
     borderFocus: '#EDAFB8',

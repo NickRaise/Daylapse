@@ -7,7 +7,6 @@ import "../global.css";
 export default function RootLayout() {
   return (
     <>
-      {/* <StatusBar style="light" /> */}
       <NativeTabs>
         <NativeTabs.Trigger name="index">
           <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>

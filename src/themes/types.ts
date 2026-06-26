@@ -16,6 +16,7 @@ export interface ThemeColors {
   textMuted: string;
   textDisabled: string;
   textOnAccent: string;
+  textOnAccentDim: string;
 
   // Borders
   border: string;

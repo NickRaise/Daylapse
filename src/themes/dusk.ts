@@ -21,7 +21,8 @@ export const dusk: Theme = {
     textSecondary: '#C9CBA3',  // Dry Sage
     textMuted:     '#8A7870',
     textDisabled:  '#5C4840',
-    textOnAccent:  '#FFFFFF',
+    textOnAccent:    '#FFFFFF',
+    textOnAccentDim: 'rgba(255,255,255,0.65)',
 
     border:      'rgba(255,225,168,0.10)',
     borderFocus: '#E26D5C',

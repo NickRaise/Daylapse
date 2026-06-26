@@ -1,7 +1,7 @@
-import React, { memo } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { CELL_SIZE } from './layout';
-import { colors, radius } from '../../theme';
+import React, { memo } from "react";
+import { Text, Pressable, StyleSheet } from "react-native";
+import { CELL_SIZE } from "./layout";
+import { colors, radius } from "../../theme";
 
 type DayCellProps = {
   day: number;
@@ -28,7 +28,11 @@ const DayCell = memo(function DayCell({
     <Pressable
       style={[
         styles.cell,
-        isToday ? styles.todayCell : isFuture ? styles.futureCell : styles.pastCell,
+        isToday
+          ? styles.todayCell
+          : isFuture
+            ? styles.futureCell
+            : styles.pastCell,
       ]}
       onPress={() => onPress(dateKey)}
       onLongPress={() => onLongPress(dateKey)}
@@ -37,7 +41,11 @@ const DayCell = memo(function DayCell({
       <Text
         style={[
           styles.dayNum,
-          isToday ? styles.todayText : isFuture ? styles.futureText : styles.pastText,
+          isToday
+            ? styles.todayText
+            : isFuture
+              ? styles.futureText
+              : styles.pastText,
         ]}
       >
         {day}
@@ -46,15 +54,17 @@ const DayCell = memo(function DayCell({
       <Text
         style={[
           styles.weekday,
-          isToday ? styles.todayWeekday : isFuture ? styles.futureWeekday : styles.pastWeekday,
+          isToday
+            ? styles.todayWeekday
+            : isFuture
+              ? styles.futureWeekday
+              : styles.pastWeekday,
         ]}
       >
         {weekdayAbbr}
       </Text>
 
-      {!hasEntry && !isFuture && !isToday && (
-        <Text style={styles.plus}>+</Text>
-      )}
+      {!hasEntry && !isFuture && !isToday && <Text style={styles.plus}>+</Text>}
     </Pressable>
   );
 });
@@ -64,35 +74,35 @@ const styles = StyleSheet.create({
     width: CELL_SIZE,
     height: CELL_SIZE,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
-  pastCell:   { backgroundColor: colors.bgSurface },
-  todayCell:  { backgroundColor: colors.primary },
+  pastCell: { backgroundColor: colors.bgSurface },
+  todayCell: { backgroundColor: colors.primary },
   futureCell: { backgroundColor: colors.bgSubtle },
 
   dayNum: {
     fontSize: CELL_SIZE * 0.24,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: -0.5,
   },
-  pastText:   { color: colors.textPrimary },
-  todayText:  { color: colors.textOnAccent },
+  pastText: { color: colors.textPrimary },
+  todayText: { color: colors.textOnAccent },
   futureText: { color: colors.textDisabled },
 
   weekday: {
     fontSize: CELL_SIZE * 0.11,
-    fontWeight: '500',
+    fontWeight: "500",
     marginTop: 4,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  pastWeekday:   { color: colors.textMuted },
-  todayWeekday:  { color: 'rgba(255,255,255,0.7)' },
+  pastWeekday: { color: colors.textMuted },
+  todayWeekday: { color: colors.textOnAccentDim },
   futureWeekday: { color: colors.bgElevated },
 
   plus: {
-    position: 'absolute',
+    position: "absolute",
     bottom: CELL_SIZE * 0.1,
     fontSize: CELL_SIZE * 0.13,
     color: colors.bgElevated,

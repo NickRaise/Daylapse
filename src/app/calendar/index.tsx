@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useCallback, useState } from "react";
+import { useRef, useMemo, useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   FlatList,
