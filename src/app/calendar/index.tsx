@@ -5,7 +5,6 @@ import {
   View,
   StyleSheet,
   Platform,
-  StatusBar,
   LayoutChangeEvent,
 } from "react-native";
 import MonthView from "../../components/calendar/MonthView";
@@ -118,7 +117,6 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.root} onLayout={onContainerLayout}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.bg} />
       <FlatList
         ref={listRef}
         data={months}
