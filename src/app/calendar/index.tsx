@@ -1,11 +1,8 @@
 import { useRef, useMemo, useCallback, useState } from "react";
-import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { useFocusEffect } from "expo-router";
 import {
   FlatList,
   View,
-  Pressable,
-  Text,
   StyleSheet,
   Platform,
   LayoutChangeEvent,

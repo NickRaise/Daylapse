@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Text, Pressable, StyleSheet } from "react-native";
 import { CELL_SIZE } from "./layout";
 import { colors, radius } from "../../theme";

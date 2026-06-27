@@ -2,38 +2,7 @@ import { colors } from "@/theme";
 import FontAwesomeFreeSolid, {
   FontAwesomeFreeSolidIconName,
 } from "@react-native-vector-icons/fontawesome-free-solid";
-import { Pressable, StyleSheet, View } from "react-native";
-
-// const RenderIcon = ({
-//   name,
-//   size,
-//   color,
-//   bgColor = "white",
-//   border,
-// }: {
-//   name: FontAwesomeFreeSolidIconName;
-//   size: number;
-//   color: string;
-//   bgColor: string;
-//   border?: string;
-// }) => {
-//   return (
-//     <View
-//       style={{
-//         width: size,
-//         height: size,
-//         borderRadius: size / 2,
-//         backgroundColor: bgColor,
-//         alignItems: "center",
-//         justifyContent: "center",
-//         borderWidth: 5,
-//         borderColor: "red",
-//       }}
-//     >
-//       <FontAwesomeFreeSolid name={name} size={size} color={color} />
-//     </View>
-//   );
-// };
+import { Pressable, View } from "react-native";
 
 const RenderIcon = ({
   name,
