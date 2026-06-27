@@ -1,8 +1,11 @@
 import { useRef, useMemo, useCallback, useState } from "react";
+import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { useFocusEffect } from "expo-router";
 import {
   FlatList,
   View,
+  Pressable,
+  Text,
   StyleSheet,
   Platform,
   LayoutChangeEvent,
@@ -22,6 +25,7 @@ import {
   getTodayTimestamp,
   type MonthData,
 } from "../../components/calendar/utils";
+import FloatingActions from "@/components/calendar/FloatingAction";
 
 const RANGE = 200; // ±200 months from today
 
@@ -131,6 +135,9 @@ export default function CalendarScreen() {
         updateCellsBatchingPeriod={50}
         removeClippedSubviews={Platform.OS === "android"}
       />
+
+      {/* Floating action icon - Play & Add */}
+      <FloatingActions />
     </View>
   );
 }
