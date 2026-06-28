@@ -1,34 +1,36 @@
 import { useRef, useMemo, useCallback, useState } from "react";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import {
   FlatList,
   View,
   StyleSheet,
+  Platform,
   LayoutChangeEvent,
 } from "react-native";
-import MonthView from "../../components/calendar/MonthView";
+import MonthView from "../../../components/calendar/MonthView";
 import {
   NUM_COLUMNS,
   CELL_SIZE,
   CELL_GAP,
   MONTH_HEADER_HEIGHT,
   computeMonthHeight,
-} from "../../components/calendar/layout";
-import { colors } from "../../theme";
+} from "../../../components/calendar/layout";
+import { colors } from "../../../theme";
 import {
   generateMonths,
   getTodayKey,
   getTodayTimestamp,
   type MonthData,
-} from "../../components/calendar/utils";
+} from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 
-const RANGE = 60; // ±60 months (~5 years) from today
+const RANGE = 200; // ±200 months from today
 
 export default function CalendarScreen() {
   const today = useMemo(() => getTodayKey(), []);
   const todayTimestamp = useMemo(() => getTodayTimestamp(), []);
   const months = useMemo(() => generateMonths(new Date(), RANGE), []);
+  const router = useRouter();
 
   const { heights, offsets } = useMemo(() => {
     const h = months.map((m) =>
@@ -84,6 +86,10 @@ export default function CalendarScreen() {
 
   const handleDayPress = useCallback((dateKey: string) => {
     console.log("[calendar] day pressed:", dateKey);
+    router.push({
+      pathname: "/calendar/day",
+      params: { dateKey },
+    });
   }, []);
 
   const handleDayLongPress = useCallback((dateKey: string) => {
