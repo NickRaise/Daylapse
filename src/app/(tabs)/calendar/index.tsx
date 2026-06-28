@@ -24,13 +24,16 @@ import {
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 
-const PAST_MONTHS = 60;  // ~5 years back
+const PAST_MONTHS = 60; // ~5 years back
 const FUTURE_MONTHS = 3; // 3 months ahead
 
 export default function CalendarScreen() {
   const today = useMemo(() => getTodayKey(), []);
   const todayTimestamp = useMemo(() => getTodayTimestamp(), []);
-  const months = useMemo(() => generateMonths(new Date(), PAST_MONTHS, FUTURE_MONTHS), []);
+  const months = useMemo(
+    () => generateMonths(new Date(), PAST_MONTHS, FUTURE_MONTHS),
+    [],
+  );
   const router = useRouter();
 
   const { heights, offsets } = useMemo(() => {
@@ -86,15 +89,26 @@ export default function CalendarScreen() {
   const [entries] = useState<Record<string, boolean>>({});
 
   const handleDayPress = useCallback((dateKey: string) => {
-    console.log("[calendar] day pressed:", dateKey);
-    router.push({
-      pathname: "/day",
-      params: { dateKey },
-    });
+    const currentDateKey = getTodayKey();
+
+    // Navigate only if it's today or past day
+    if (dateKey <= currentDateKey) {
+      console.log("[calendar] day pressed:", dateKey);
+      router.push({
+        pathname: "/day",
+        params: { dateKey },
+      });
+    } else {
+      console.log(
+        "[calendar] future date pressed, navigation blocked:",
+        dateKey,
+      );
+    }
   }, []);
 
   const handleDayLongPress = useCallback((dateKey: string) => {
     console.log("[calendar] long press:", dateKey);
+    console.log("No action defined for long press yet.");
   }, []);
 
   const renderItem = useCallback(

@@ -21,6 +21,7 @@ export interface ThemeColors {
   // Borders
   border: string;
   borderFocus: string;
+  borderDark: string;
 
   // Status
   success: string;

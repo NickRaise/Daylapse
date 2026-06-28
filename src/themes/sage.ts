@@ -26,6 +26,7 @@ export const sage: Theme = {
 
     border:      '#E4DFC8',
     borderFocus: '#D4A373',
+    borderDark:  '#B88758',
 
     success: '#88A97A',
     warning: '#D4A373',
