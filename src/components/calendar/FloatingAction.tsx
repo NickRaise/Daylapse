@@ -57,5 +57,5 @@ export default function FloatingActions() {
 }
 
 const styles = {
-  container: "absolute bottom-8 right-5 flex flex-row gap-4 flex-1",
+  container: "absolute bottom-2 right-5 flex flex-row gap-4 flex-1",
 };

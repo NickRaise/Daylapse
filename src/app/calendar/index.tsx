@@ -4,7 +4,6 @@ import {
   FlatList,
   View,
   StyleSheet,
-  Platform,
   LayoutChangeEvent,
 } from "react-native";
 import MonthView from "../../components/calendar/MonthView";
@@ -24,7 +23,7 @@ import {
 } from "../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 
-const RANGE = 200; // ±200 months from today
+const RANGE = 60; // ±60 months (~5 years) from today
 
 export default function CalendarScreen() {
   const today = useMemo(() => getTodayKey(), []);
@@ -127,10 +126,10 @@ export default function CalendarScreen() {
         getItemLayout={getItemLayout}
         showsVerticalScrollIndicator={false}
         windowSize={5}
-        maxToRenderPerBatch={3}
-        initialNumToRender={3}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews={Platform.OS === "android"}
+        maxToRenderPerBatch={5}
+        initialNumToRender={5}
+        updateCellsBatchingPeriod={100}
+        removeClippedSubviews={true}
       />
 
       {/* Floating action icon - Play & Add */}
