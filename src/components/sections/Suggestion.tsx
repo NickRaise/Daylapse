@@ -21,7 +21,7 @@ export default function SuggestionSection({ dateKey }: { dateKey: string }) {
 const styles = StyleSheet.create({
   root: {
     width: "100%",
-    minHeight: 100,
+    minHeight: 50,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   noSuggestionsText: {
-    color: colors.textPrimary,
+    color: colors.placeholderSecondary,
     fontStyle: "italic",
     textAlign: "center",
   },

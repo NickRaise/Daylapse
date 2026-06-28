@@ -18,6 +18,10 @@ export interface ThemeColors {
   textOnAccent: string;
   textOnAccentDim: string;
 
+  // Placeholder
+  placeholderPrimary: string;
+  placeholderSecondary: string;
+
   // Borders
   border: string;
   borderFocus: string;
@@ -78,9 +82,9 @@ export interface Theme {
     base: number;
     lg: number;
     xl: number;
-    '2xl': number;
-    '3xl': number;
-    '4xl': number;
+    "2xl": number;
+    "3xl": number;
+    "4xl": number;
   };
   fontWeight: {
     regular: string;

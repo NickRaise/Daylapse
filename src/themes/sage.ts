@@ -24,9 +24,13 @@ export const sage: Theme = {
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
 
+    placeholderPrimary: '#72685E',
+    placeholderSecondary: '#8A8178',
+
     border:      '#E4DFC8',
     borderFocus: '#D4A373',
-    borderDark:  '#B88758',
+    borderDark:  '#3F3428',
+
 
     success: '#88A97A',
     warning: '#D4A373',
