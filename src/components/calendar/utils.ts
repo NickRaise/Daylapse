@@ -12,12 +12,12 @@ export const MONTH_NAMES = [
 
 const WEEKDAY_ABBRS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-export function generateMonths(centerDate: Date, range: number): MonthData[] {
+export function generateMonths(centerDate: Date, pastMonths: number, futureMonths: number): MonthData[] {
   const result: MonthData[] = [];
   const baseYear = centerDate.getFullYear();
   const baseMonth = centerDate.getMonth();
 
-  for (let offset = -range; offset <= range; offset++) {
+  for (let offset = -pastMonths; offset <= futureMonths; offset++) {
     const totalMonths = baseMonth + offset;
     const year = baseYear + Math.floor(totalMonths / 12);
     const month = ((totalMonths % 12) + 12) % 12;

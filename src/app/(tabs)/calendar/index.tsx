@@ -24,12 +24,13 @@ import {
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 
-const RANGE = 200; // ±200 months from today
+const PAST_MONTHS = 60;  // ~5 years back
+const FUTURE_MONTHS = 3; // 3 months ahead
 
 export default function CalendarScreen() {
   const today = useMemo(() => getTodayKey(), []);
   const todayTimestamp = useMemo(() => getTodayTimestamp(), []);
-  const months = useMemo(() => generateMonths(new Date(), RANGE), []);
+  const months = useMemo(() => generateMonths(new Date(), PAST_MONTHS, FUTURE_MONTHS), []);
   const router = useRouter();
 
   const { heights, offsets } = useMemo(() => {
@@ -54,7 +55,7 @@ export default function CalendarScreen() {
 
     // Absolute Y of today's row top inside the full list
     const todayRowY =
-      offsets[RANGE] + MONTH_HEADER_HEIGHT + todayRowIndex * rowH;
+      offsets[PAST_MONTHS] + MONTH_HEADER_HEIGHT + todayRowIndex * rowH;
 
     // Position today such that 2 full rows remain visible below it
     const targetOffset = Math.max(0, todayRowY - containerH + 3 * rowH);
@@ -87,7 +88,7 @@ export default function CalendarScreen() {
   const handleDayPress = useCallback((dateKey: string) => {
     console.log("[calendar] day pressed:", dateKey);
     router.push({
-      pathname: "/calendar/day",
+      pathname: "/day",
       params: { dateKey },
     });
   }, []);
@@ -128,7 +129,7 @@ export default function CalendarScreen() {
         data={months}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        initialScrollIndex={RANGE}
+        initialScrollIndex={PAST_MONTHS}
         getItemLayout={getItemLayout}
         showsVerticalScrollIndicator={false}
         windowSize={5}
