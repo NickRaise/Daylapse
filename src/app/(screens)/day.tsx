@@ -1,6 +1,6 @@
 import { colors } from "@/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { parseDateKey } from "@/components/calendar/utils";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import SuggestionSection from "@/components/sections/Suggestion";
@@ -9,6 +9,18 @@ import { quotes } from "@/data/quotes";
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
   const { dayName, formattedDate } = parseDateKey(dateKey as string);
+  const router = useRouter();
+
+  const handleOpenCurrentDay = () => {
+    // redirect to camera / Gallery
+    router.push({
+      pathname: "/camera",
+      params: {
+        dateKey,
+      },
+    });
+  };
+
   return (
     <View style={styles.root}>
       <View style={styles.header}>
@@ -21,10 +33,7 @@ export default function DayScreen() {
 
       <View style={styles.main}>
         {/* Add Media Trigger */}
-        <Pressable
-          style={styles.addMediaButton}
-          onPress={() => console.log("Add Media pressed")}
-        >
+        <Pressable style={styles.addMediaButton} onPress={handleOpenCurrentDay}>
           <FontAwesomeFreeSolid
             name="plus"
             size={12}
