@@ -3,6 +3,8 @@ import FontAwesomeFreeSolid, {
   FontAwesomeFreeSolidIconName,
 } from "@react-native-vector-icons/fontawesome-free-solid";
 import { Pressable, View } from "react-native";
+import { getTodayKey } from "./utils";
+import { useRouter } from "expo-router";
 
 const RenderIcon = ({
   name,
@@ -34,6 +36,13 @@ const RenderIcon = ({
 
 export default function FloatingActions() {
   const ICON_SIZE = 80;
+  const router = useRouter();
+
+  const handleAddPress = () => {
+    const dateKey = getTodayKey();
+    router.push({ pathname: "/day", params: { dateKey } });
+  };
+
   return (
     <View className={styles.container}>
       <Pressable onPress={() => console.log("Play button pressed")}>
@@ -44,7 +53,7 @@ export default function FloatingActions() {
           bgColor="white"
         />
       </Pressable>
-      <Pressable onPress={() => console.log("Plus button pressed")}>
+      <Pressable onPress={handleAddPress}>
         <RenderIcon
           name="plus-circle"
           size={ICON_SIZE}

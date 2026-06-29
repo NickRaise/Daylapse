@@ -1,5 +1,5 @@
 import { colors } from "@/theme";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { parseDateKey } from "@/components/calendar/utils";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
@@ -16,7 +16,7 @@ export default function DayScreen() {
         <Text style={styles.dayText}>{dayName}</Text>
       </View>
 
-      {/* Random Quote */}
+      {/* TODO: Random Quote */}
       {/* <Text>{quotes[Math.floor(Math.random() * quotes.length)]}</Text> */}
 
       <View style={styles.main}>
