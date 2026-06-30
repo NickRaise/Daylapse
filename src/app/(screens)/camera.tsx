@@ -97,6 +97,18 @@ export default function Camera() {
     await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images", "videos"] });
   }
 
+  async function openNativeCamera() {
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: mode === "picture" ? ["images"] : ["videos"],
+      quality: 1,
+      videoMaxDuration: 300,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const asset = result.assets[0];
+      setPreview({ uri: asset.uri, type: asset.type === "video" ? "video" : "photo" });
+    }
+  }
+
   // ── Preview overlay ───────────────────────────────────────────────────────
 
   if (preview) {
@@ -137,12 +149,16 @@ export default function Camera() {
       <View style={vs.viewfinderWrapper}>
         <CameraView ref={cameraRef} style={vs.camera} facing={facing} mode={mode} />
 
-        {/* Recording indicator */}
-        {isRecording && (
+        {/* Top-right: REC badge while recording, native camera icon otherwise */}
+        {isRecording ? (
           <View style={vs.recBadge}>
             <View style={vs.recDot} />
             <Text style={ts.recText}>REC</Text>
           </View>
+        ) : (
+          <TouchableOpacity style={vs.nativeBtn} onPress={openNativeCamera}>
+            <Text style={ts.nativeBtnIcon}>⊙</Text>
+          </TouchableOpacity>
         )}
 
         {/* Close */}
@@ -355,6 +371,17 @@ const vs = StyleSheet.create({
     borderRadius: radius.lg,
     alignItems: "center",
   },
+  nativeBtn: {
+    position: "absolute",
+    top: spacing[6],
+    right: spacing[5],
+    width: 36,
+    height: 36,
+    borderRadius: radius.full,
+    backgroundColor: "rgba(254,250,224,0.75)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   previewBtnSecondary: {
     backgroundColor: colors.bgSubtle,
     borderWidth: 1,
@@ -414,6 +441,10 @@ const ts = StyleSheet.create({
     fontSize: fontSize.base,
     color: colors.bgSubtle,
     fontWeight: "500",
+  },
+  nativeBtnIcon: {
+    fontSize: 18,
+    color: colors.textPrimary,
   },
   previewBtnTextSecondary: {
     fontSize: fontSize.base,
