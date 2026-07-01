@@ -1,58 +1,128 @@
 import { CameraMode } from "expo-camera";
-import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useRef } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors, radius, spacing, fontSize } from "../../theme";
+
+const LONG_PRESS_DELAY = 300; // ms before hold-to-record kicks in
 
 type Props = {
   mode: CameraMode;
   isRecording: boolean;
+  isHoldRecording: boolean;
+  recordingDuration: number;
   isBusy: boolean;
   onModeChange: (mode: CameraMode) => void;
   onCapture: () => void;
+  onLongPressCapture: () => void;
+  onReleaseCapture: () => void;
   onGallery: () => void;
   onFlip: () => void;
 };
 
+function formatDuration(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export function CameraControls({
   mode,
   isRecording,
+  isHoldRecording,
+  recordingDuration,
   isBusy,
   onModeChange,
   onCapture,
+  onLongPressCapture,
+  onReleaseCapture,
   onGallery,
   onFlip,
 }: Props) {
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // tracks what the current press gesture means
+  const pressStateRef = useRef<"idle" | "pending" | "holding" | "video-tap">("idle");
+
+  function handlePressIn() {
+    if (isBusy) return;
+
+    if (isRecording && !isHoldRecording) {
+      // video mode — will stop on release
+      pressStateRef.current = "video-tap";
+      return;
+    }
+
+    if (!isRecording) {
+      pressStateRef.current = "pending";
+      holdTimerRef.current = setTimeout(() => {
+        holdTimerRef.current = null;
+        pressStateRef.current = "holding";
+        onLongPressCapture();
+      }, LONG_PRESS_DELAY);
+    }
+  }
+
+  function handlePressOut() {
+    const state = pressStateRef.current;
+    pressStateRef.current = "idle";
+
+    if (state === "pending") {
+      clearTimeout(holdTimerRef.current!);
+      holdTimerRef.current = null;
+      onCapture(); // short tap
+    } else if (state === "holding") {
+      onReleaseCapture(); // end hold recording
+    } else if (state === "video-tap") {
+      onCapture(); // stop video mode recording
+    }
+  }
+
   return (
     <View style={s.panel}>
-      {/* Mode toggle */}
-      <View style={s.modeRow}>
-        <TouchableOpacity
-          style={[s.modeChip, mode === "picture" && s.modeChipActive]}
-          onPress={() => onModeChange("picture")}
-        >
-          <Text style={[t.modeChipText, mode === "picture" && t.modeChipTextActive]}>Photo</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[s.modeChip, mode === "video" && s.modeChipActive]}
-          onPress={() => onModeChange("video")}
-        >
-          <Text style={[t.modeChipText, mode === "video" && t.modeChipTextActive]}>Video</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Top row: mode toggle OR recording indicator */}
+      {isHoldRecording ? (
+        <View style={s.recordingRow}>
+          <View style={s.recDot} />
+          <Text style={t.durationText}>{formatDuration(recordingDuration)}</Text>
+          <Text style={t.recordingLabel}>Recording</Text>
+        </View>
+      ) : (
+        <View style={s.modeRow}>
+          <TouchableOpacity
+            style={[s.modeChip, mode === "picture" && s.modeChipActive]}
+            onPress={() => onModeChange("picture")}
+          >
+            <Text style={[t.modeChipText, mode === "picture" && t.modeChipTextActive]}>Photo</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.modeChip, mode === "video" && s.modeChipActive]}
+            onPress={() => onModeChange("video")}
+          >
+            <Text style={[t.modeChipText, mode === "video" && t.modeChipTextActive]}>Video</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Controls row */}
       <View style={s.controls}>
-        <TouchableOpacity style={s.sideBtn} onPress={onGallery}>
-          <Text style={t.sideBtnIcon}>⊞</Text>
-          <Text style={t.sideBtnLabel}>Gallery</Text>
-        </TouchableOpacity>
+        {/* Gallery — hidden while hold-recording */}
+        <View style={s.sideBtn}>
+          {!isHoldRecording && (
+            <TouchableOpacity style={s.sideBtn} onPress={onGallery}>
+              <Text style={t.sideBtnIcon}>⊞</Text>
+              <Text style={t.sideBtnLabel}>Gallery</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-        <TouchableOpacity
+        {/* Capture button */}
+        <Pressable
           style={[
             s.captureRing,
-            mode === "video" && s.captureRingVideo,
+            (mode === "video" || isRecording) && s.captureRingVideo,
             isRecording && s.captureRingRecording,
           ]}
-          onPress={onCapture}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
           disabled={isBusy}
         >
           {isBusy ? (
@@ -61,17 +131,26 @@ export function CameraControls({
             <View
               style={[
                 s.captureInner,
-                mode === "video" && s.captureInnerVideo,
+                (mode === "video" || isHoldRecording) && s.captureInnerVideo,
                 isRecording && s.captureInnerStop,
               ]}
             />
           )}
-        </TouchableOpacity>
+        </Pressable>
 
-        <TouchableOpacity style={s.sideBtn} onPress={onFlip} disabled={isRecording}>
-          <Text style={[t.sideBtnIcon, isRecording && t.sideBtnDisabled]}>↺</Text>
-          <Text style={[t.sideBtnLabel, isRecording && t.sideBtnDisabled]}>Flip</Text>
-        </TouchableOpacity>
+        {/* Flip — hidden while hold-recording */}
+        <View style={s.sideBtn}>
+          {!isHoldRecording && (
+            <TouchableOpacity
+              style={s.sideBtn}
+              onPress={onFlip}
+              disabled={isRecording}
+            >
+              <Text style={[t.sideBtnIcon, isRecording && t.sideBtnDisabled]}>↺</Text>
+              <Text style={[t.sideBtnLabel, isRecording && t.sideBtnDisabled]}>Flip</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
@@ -100,6 +179,19 @@ const s = StyleSheet.create({
   },
   modeChipActive: {
     backgroundColor: colors.primary,
+  },
+  recordingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing[2],
+    height: 36,
+  },
+  recDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.error,
   },
   controls: {
     flexDirection: "row",
@@ -157,6 +249,17 @@ const t = StyleSheet.create({
   },
   modeChipTextActive: {
     color: colors.textOnAccent,
+  },
+  durationText: {
+    fontSize: fontSize.lg,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+  },
+  recordingLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: "500",
+    color: colors.textSecondary,
   },
   sideBtnIcon: {
     fontSize: 24,
