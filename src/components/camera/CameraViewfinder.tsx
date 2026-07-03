@@ -8,6 +8,7 @@ type Props = {
   facing: CameraType;
   mode: CameraMode;
   isRecording: boolean;
+  onCameraReady: () => void;
   onClose: () => void;
   onOpenNativeCamera: () => void;
 };
@@ -17,12 +18,21 @@ export function CameraViewfinder({
   facing,
   mode,
   isRecording,
+  onCameraReady,
   onClose,
   onOpenNativeCamera,
 }: Props) {
   return (
     <View style={s.wrapper}>
-      <CameraView ref={cameraRef} style={s.camera} facing={facing} mode={mode} />
+      <CameraView
+        ref={cameraRef}
+        style={s.camera}
+        facing={facing}
+        mode={mode}
+        onCameraReady={onCameraReady}
+        mute={false}
+        videoQuality="720p"
+      />
 
       {isRecording ? (
         <View style={s.recBadge}>
@@ -76,8 +86,8 @@ const s = StyleSheet.create({
   },
   recBadge: {
     position: "absolute",
-    top: spacing[6],
-    right: spacing[5],
+    bottom: spacing[6],
+    left: spacing[5],
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "rgba(0,0,0,0.45)",

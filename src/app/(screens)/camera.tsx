@@ -17,18 +17,17 @@ import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls } from "../../components/camera/CameraControls";
 import { CameraPreview } from "../../components/camera/CameraPreview";
 
-type Preview = { uri: string; type: "photo" | "video" };
+type Preview = { uri: string; type: "photo" | "video"; isLoading?: boolean };
 
 export default function Camera() {
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const recordStartRef = useRef<number | null>(null);
   const isHoldRecordingRef = useRef(false); // sync ref — avoids stale closure in handleReleaseCapture
-  const MIN_RECORD_MS = 1000;
+  const cameraReadyResolverRef = useRef<(() => void) | null>(null);
 
   const [facing, setFacing] = useState<CameraType>("back");
-  const [mode, setMode] = useState<CameraMode>("picture");   // UI toggle
+  const [mode, setMode] = useState<CameraMode>("picture"); // UI toggle
   const [cameraMode, setCameraMode] = useState<CameraMode>("picture"); // actual CameraView mode
   const [isRecording, setIsRecording] = useState(false);
   const [isHoldRecording, setIsHoldRecording] = useState(false);
@@ -40,9 +39,21 @@ export default function Camera() {
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
 
   if (!camPermission) return <View style={s.root} />;
-  if (!camPermission.granted) return <CameraPermission onRequest={requestCamPermission} />;
+  if (!camPermission.granted)
+    return <CameraPermission onRequest={requestCamPermission} />;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  function waitForCameraReady(): Promise<void> {
+    return new Promise((resolve) => {
+      cameraReadyResolverRef.current = resolve;
+    });
+  }
+
+  function handleCameraReady() {
+    cameraReadyResolverRef.current?.();
+    cameraReadyResolverRef.current = null;
+  }
 
   function startTimer() {
     setRecordingDuration(0);
@@ -72,7 +83,9 @@ export default function Camera() {
     if (mode === "picture") {
       setIsBusy(true);
       try {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.9,
+        });
         setPreview({ uri: photo.uri, type: "photo" });
       } finally {
         setIsBusy(false);
@@ -111,29 +124,36 @@ export default function Camera() {
     isHoldRecordingRef.current = true;
     setIsHoldRecording(true);
     setIsRecording(true);
-    setCameraMode("video"); // switch hardware to video mode
-    await new Promise((r) => setTimeout(r, 200)); // wait for CameraView to reinitialize
+    setCameraMode("video");
+    await waitForCameraReady();
     startTimer();
-    recordStartRef.current = Date.now();
     try {
       const result = await cameraRef.current.recordAsync();
-      if (result?.uri) setPreview({ uri: result.uri, type: "video" });
+      if (result?.uri) {
+        setPreview({ uri: result.uri, type: "video", isLoading: false });
+      } else {
+        setPreview(null);
+      }
     } catch {
-      // swallow "stopped before data" errors from very short holds
+      setPreview(null);
     } finally {
       isHoldRecordingRef.current = false;
       setIsHoldRecording(false);
       setIsRecording(false);
-      setCameraMode("picture"); // restore hardware mode
+      setCameraMode("picture");
       stopTimer();
     }
   }
 
   function handleReleaseCapture() {
-    if (!isHoldRecordingRef.current) return; // ref — never stale
-    const elapsed = recordStartRef.current ? Date.now() - recordStartRef.current : MIN_RECORD_MS;
-    const remaining = Math.max(0, MIN_RECORD_MS - elapsed);
-    setTimeout(() => cameraRef.current?.stopRecording(), remaining);
+    if (!isHoldRecordingRef.current) return;
+    // Snap UI back and jump to preview immediately — video will fill in when ready
+    isHoldRecordingRef.current = false;
+    setIsHoldRecording(false);
+    setIsRecording(false);
+    stopTimer();
+    setPreview({ uri: "", type: "video", isLoading: true });
+    cameraRef.current?.stopRecording();
   }
 
   // ── Preview handlers ──────────────────────────────────────────────────────
@@ -145,7 +165,9 @@ export default function Camera() {
   }
 
   async function handleGallery() {
-    await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images", "videos"] });
+    await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images", "videos"],
+    });
   }
 
   async function handleNativeCamera() {
@@ -156,7 +178,10 @@ export default function Camera() {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      setPreview({ uri: asset.uri, type: asset.type === "video" ? "video" : "photo" });
+      setPreview({
+        uri: asset.uri,
+        type: asset.type === "video" ? "video" : "photo",
+      });
     }
   }
 
@@ -184,6 +209,7 @@ export default function Camera() {
         facing={facing}
         mode={cameraMode}
         isRecording={isRecording}
+        onCameraReady={handleCameraReady}
         onClose={() => router.back()}
         onOpenNativeCamera={handleNativeCamera}
       />
