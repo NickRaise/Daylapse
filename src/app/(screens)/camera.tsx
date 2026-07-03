@@ -37,10 +37,28 @@ export default function Camera() {
 
   const [camPermission, requestCamPermission] = useCameraPermissions();
   const [micPermission, requestMicPermission] = useMicrophonePermissions();
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions(
+    { writeOnly: true },
+  );
 
-  if (!camPermission) return <View style={s.root} />;
-  if (!camPermission.granted)
-    return <CameraPermission onRequest={requestCamPermission} />;
+  if (!camPermission || !micPermission || !mediaPermission)
+    return <View style={s.root} />;
+
+  if (
+    !camPermission.granted ||
+    !micPermission.granted ||
+    !mediaPermission.granted
+  ) {
+    return (
+      <CameraPermission
+        onRequest={async () => {
+          if (!camPermission.granted) await requestCamPermission();
+          if (!micPermission.granted) await requestMicPermission();
+          if (!mediaPermission.granted) await requestMediaPermission();
+        }}
+      />
+    );
+  }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
 
@@ -71,8 +89,7 @@ export default function Camera() {
   }
 
   async function saveToGallery(uri: string) {
-    const { status } = await MediaLibrary.requestPermissionsAsync(true);
-    if (status === "granted") await MediaLibrary.createAssetAsync(uri);
+    await MediaLibrary.createAssetAsync(uri);
   }
 
   // ── Capture handlers ──────────────────────────────────────────────────────
@@ -101,10 +118,6 @@ export default function Camera() {
       cameraRef.current.stopRecording();
       return;
     }
-    if (!micPermission?.granted) {
-      await requestMicPermission();
-      return;
-    }
     setIsRecording(true);
     startTimer();
     try {
@@ -124,11 +137,6 @@ export default function Camera() {
 
   async function handleLongPressCapture() {
     if (!cameraRef.current || mode !== "picture" || isHoldRecording) return;
-
-    if (!micPermission?.granted) {
-      const { granted } = await requestMicPermission();
-      if (!granted) return;
-    }
 
     isHoldRecordingRef.current = true;
     setIsHoldRecording(true);
