@@ -95,6 +95,9 @@ export default function Camera() {
 
     // Video mode — tap to toggle
     if (isRecording) {
+      setIsRecording(false);
+      stopTimer();
+      setPreview({ uri: "", type: "video", isLoading: true });
       cameraRef.current.stopRecording();
       return;
     }
@@ -106,7 +109,13 @@ export default function Camera() {
     startTimer();
     try {
       const result = await cameraRef.current.recordAsync();
-      if (result?.uri) setPreview({ uri: result.uri, type: "video" });
+      if (result?.uri) {
+        setPreview({ uri: result.uri, type: "video", isLoading: false });
+      } else {
+        setPreview(null);
+      }
+    } catch {
+      setPreview(null);
     } finally {
       setIsRecording(false);
       stopTimer();
@@ -188,6 +197,7 @@ export default function Camera() {
   function handleModeChange(next: CameraMode) {
     if (isRecording) return;
     setMode(next);
+    setCameraMode(next);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

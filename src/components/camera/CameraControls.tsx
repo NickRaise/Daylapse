@@ -79,7 +79,7 @@ export function CameraControls({
   return (
     <View style={s.panel}>
       {/* Top row: mode toggle OR recording indicator */}
-      {isHoldRecording ? (
+      {isRecording ? (
         <View style={s.recordingRow}>
           <View style={s.recDot} />
           <Text style={t.durationText}>{formatDuration(recordingDuration)}</Text>
@@ -104,9 +104,9 @@ export function CameraControls({
 
       {/* Controls row */}
       <View style={s.controls}>
-        {/* Gallery — hidden while hold-recording */}
+        {/* Gallery — hidden while recording */}
         <View style={s.sideBtn}>
-          {!isHoldRecording && (
+          {!isRecording && (
             <TouchableOpacity style={s.sideBtn} onPress={onGallery}>
               <Text style={t.sideBtnIcon}>⊞</Text>
               <Text style={t.sideBtnLabel}>Gallery</Text>
@@ -138,16 +138,12 @@ export function CameraControls({
           )}
         </Pressable>
 
-        {/* Flip — hidden while hold-recording */}
+        {/* Flip — hidden while recording */}
         <View style={s.sideBtn}>
-          {!isHoldRecording && (
-            <TouchableOpacity
-              style={s.sideBtn}
-              onPress={onFlip}
-              disabled={isRecording}
-            >
-              <Text style={[t.sideBtnIcon, isRecording && t.sideBtnDisabled]}>↺</Text>
-              <Text style={[t.sideBtnLabel, isRecording && t.sideBtnDisabled]}>Flip</Text>
+          {!isRecording && (
+            <TouchableOpacity style={s.sideBtn} onPress={onFlip}>
+              <Text style={t.sideBtnIcon}>↺</Text>
+              <Text style={t.sideBtnLabel}>Flip</Text>
             </TouchableOpacity>
           )}
         </View>
