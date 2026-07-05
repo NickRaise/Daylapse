@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Sad emoji">
+  <g transform="translate(72,80)" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="-6" cy="8" rx="46" ry="44" fill="var(--emoji-blob, #e8b4a0)"/>
+    <circle r="44" fill="var(--emoji-face, #fdf0ea)" stroke="currentColor" stroke-width="6"/>
+    <circle cx="-15" cy="-10" r="4.5" fill="currentColor"/>
+    <circle cx="15" cy="-10" r="4.5" fill="currentColor"/>
+    <path d="M-14 18 Q0 6 14 18" fill="none" stroke="currentColor" stroke-width="6"/>
+    <path d="M-10 2 q-2 8 4 10" fill="none" stroke="currentColor" stroke-width="4"/>
+    <path d="M56 -34 q-8 12 0 18 q10 7 4 18" fill="none" stroke="var(--emoji-accent, #7db3d8)" stroke-width="4"/>
+    <path d="M70 -8 q-6 10 0 15 q8 6 3 15" fill="none" stroke="var(--emoji-accent, #7db3d8)" stroke-width="4"/>
+  </g>
+</svg>

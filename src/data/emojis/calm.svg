@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Calm emoji">
+  <g transform="translate(72,80)" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="-8" cy="8" rx="46" ry="44" fill="var(--emoji-blob, #e8a087)"/>
+    <circle r="44" fill="var(--emoji-face, #fdf0ea)" stroke="currentColor" stroke-width="6"/>
+    <path d="M-20 -6 Q-14 -12 -8 -6" fill="none" stroke="currentColor" stroke-width="5"/>
+    <path d="M8 -6 Q14 -12 20 -6" fill="none" stroke="currentColor" stroke-width="5"/>
+    <path d="M-12 12 Q0 20 12 12" fill="none" stroke="currentColor" stroke-width="5"/>
+    <path d="M52 -30 q4 -14 16 -10 q12 4 4 16 q-6 8 -16 2" fill="var(--emoji-accent, #f6c9cf)" stroke="currentColor" stroke-width="4"/>
+  </g>
+</svg>

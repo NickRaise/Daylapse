@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160" role="img" aria-label="Angry emoji">
+  <g transform="translate(76,84)" stroke-linecap="round" stroke-linejoin="round">
+    <ellipse cx="6" cy="8" rx="46" ry="44" fill="var(--emoji-blob, #f6c9cf)"/>
+    <circle r="44" fill="var(--emoji-face, #fdf0ea)" stroke="currentColor" stroke-width="6"/>
+    <path d="M-24 -18 L-8 -10" fill="none" stroke="currentColor" stroke-width="5"/>
+    <path d="M24 -18 L8 -10" fill="none" stroke="currentColor" stroke-width="5"/>
+    <circle cx="-14" cy="-2" r="4.5" fill="currentColor"/>
+    <circle cx="14" cy="-2" r="4.5" fill="currentColor"/>
+    <path d="M-14 20 Q0 8 14 20" fill="none" stroke="currentColor" stroke-width="6"/>
+    <path d="M42 -56 l10 8 M62 -64 l0 12 M56 -44 l8 8" fill="none" stroke="var(--emoji-accent, #d96a5a)" stroke-width="4"/>
+  </g>
+</svg>

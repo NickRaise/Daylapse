@@ -7,6 +7,7 @@ import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-fre
 import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
 import { JournalEditor } from "@/components/journal/JournalEditor";
+import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
 
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
@@ -15,6 +16,7 @@ export default function DayScreen() {
 
   const [journalText, setJournalText] = useState("");
   const [journalOpen, setJournalOpen] = useState(false);
+  const [mood, setMood] = useState<Mood | null>(null);
 
   const quote = useMemo(
     () => quotes[Math.floor(Math.random() * quotes.length)],
@@ -75,6 +77,9 @@ export default function DayScreen() {
             }
           />
         </Pressable>
+
+        {/* Mood Picker */}
+        <MoodPicker value={mood} onChange={setMood} />
       </View>
 
       {/* Suggestion Box */}
