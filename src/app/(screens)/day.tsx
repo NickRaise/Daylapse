@@ -1,7 +1,7 @@
 import { colors } from "@/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { parseDateKey } from "@/components/calendar/utils";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import SuggestionSection from "@/components/sections/Suggestion";
@@ -15,6 +15,11 @@ export default function DayScreen() {
 
   const [journalText, setJournalText] = useState("");
   const [journalOpen, setJournalOpen] = useState(false);
+
+  const quote = useMemo(
+    () => quotes[Math.floor(Math.random() * quotes.length)],
+    [],
+  );
 
   const handleOpenCurrentDay = () => {
     // redirect to camera / Gallery
@@ -33,8 +38,9 @@ export default function DayScreen() {
         <Text style={styles.dayText}>{dayName}</Text>
       </View>
 
-      {/* TODO: Random Quote */}
-      {/* <Text>{quotes[Math.floor(Math.random() * quotes.length)]}</Text> */}
+      <View style={styles.quoteContainer}>
+        <Text style={styles.quoteText}>"{quote}"</Text>
+      </View>
 
       <View style={styles.main}>
         {/* Add Media Trigger */}
@@ -112,6 +118,16 @@ const styles = StyleSheet.create({
     fontSize: 25,
     color: colors.textSecondary,
   },
+  quoteContainer: {
+    paddingTop: 28,
+    paddingHorizontal: 8,
+  },
+  quoteText: {
+    fontFamily: "Caveat",
+    fontSize: 21,
+    color: colors.textSecondary,
+    lineHeight: 28,
+  },
   addMediaButton: {
     height: 150,
     width: "85%",
@@ -123,7 +139,6 @@ const styles = StyleSheet.create({
     borderColor: colors.borderDark,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 40,
   },
   addMediaButtonText: {
     fontWeight: "bold",
