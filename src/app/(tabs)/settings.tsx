@@ -4,10 +4,10 @@ export default function Settings() {
   return (
     <View style={styles.container}>
       <Text className="bg-red-400">Settings</Text>
-      // Video Quality
-      // use native mobile camera
-      // Save to media gallery also
-      // Force recording time limit (1 sec, 5 sec, 10 sec, 30 sec, 1 min, 5 min)
+      {/* Video Quality
+       use native mobile camera
+       Save to media gallery also
+       Force recording time limit (1 sec, 5 sec, 10 sec, 30 sec, 1 min, 5 min) */}
     </View>
   );
 }

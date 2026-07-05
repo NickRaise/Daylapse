@@ -1,15 +1,20 @@
 import { colors } from "@/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { parseDateKey } from "@/components/calendar/utils";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
+import { JournalEditor } from "@/components/journal/JournalEditor";
 
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
   const { dayName, formattedDate } = parseDateKey(dateKey as string);
   const router = useRouter();
+
+  const [journalText, setJournalText] = useState("");
+  const [journalOpen, setJournalOpen] = useState(false);
 
   const handleOpenCurrentDay = () => {
     // redirect to camera / Gallery
@@ -43,20 +48,39 @@ export default function DayScreen() {
         </Pressable>
 
         {/* Daily Journal */}
-        <Pressable onPress={() => console.log("Journal Input pressed")}>
-          <View style={styles.journalInputButton}>
-            <Text style={styles.journalInputText}>Tell today's story...</Text>
-            <FontAwesomeFreeSolid
-              name="edit"
-              size={20}
-              color={colors.placeholderPrimary}
-            />
-          </View>
+        <Pressable
+          style={styles.journalInputButton}
+          onPress={() => setJournalOpen(true)}
+        >
+          <Text
+            style={[
+              styles.journalInputText,
+              !!journalText && styles.journalInputTextFilled,
+            ]}
+            numberOfLines={1}
+          >
+            {journalText || "Tell today's story..."}
+          </Text>
+          <FontAwesomeFreeSolid
+            name="edit"
+            size={20}
+            color={
+              journalText ? colors.textSecondary : colors.placeholderPrimary
+            }
+          />
         </Pressable>
       </View>
 
       {/* Suggestion Box */}
       <SuggestionSection dateKey={dateKey} />
+
+      <JournalEditor
+        visible={journalOpen}
+        value={journalText}
+        onChange={setJournalText}
+        onClose={() => setJournalOpen(false)}
+        dateLabel={formattedDate}
+      />
     </View>
   );
 }
@@ -118,5 +142,10 @@ const styles = StyleSheet.create({
   journalInputText: {
     color: colors.placeholderPrimary,
     fontStyle: "italic",
+    flex: 1,
+  },
+  journalInputTextFilled: {
+    color: colors.textPrimary,
+    fontStyle: "normal",
   },
 });
