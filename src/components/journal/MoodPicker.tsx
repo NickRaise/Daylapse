@@ -70,7 +70,6 @@ export function MoodPicker({ value, onChange }: Props) {
 
   return (
     <View style={s.root}>
-      <Text style={s.heading}>How are you feeling?</Text>
       <View style={s.row}>
         {MOODS.map(({ key, label, blobColor, faceColor, Component }) => {
           const selected = value === key;
@@ -95,6 +94,7 @@ export function MoodPicker({ value, onChange }: Props) {
           );
         })}
       </View>
+      <Text style={s.heading}>How are you feeling?</Text>
     </View>
   );
 }
@@ -108,6 +108,7 @@ const s = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontWeight: "500",
+    textAlign: "center",
   },
   row: {
     flexDirection: "row",
