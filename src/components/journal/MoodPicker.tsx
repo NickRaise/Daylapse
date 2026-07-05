@@ -16,6 +16,7 @@ type MoodConfig = {
   key: Mood;
   label: string;
   blobColor: string;
+  faceColor: string;
   Component: ComponentType<EmojiProps>;
 };
 
@@ -24,25 +25,35 @@ const MOODS: MoodConfig[] = [
     key: "happy",
     label: "Happy",
     blobColor: colors.moodHappy,
+    faceColor: "#FDE8A0",
     Component: HappyEmoji,
   },
   {
     key: "calm",
     label: "Calm",
     blobColor: colors.moodCalm,
+    faceColor: "#D8E6C8",
     Component: CalmEmoji,
   },
   {
     key: "neutral",
     label: "Neutral",
     blobColor: colors.moodNeutral,
+    faceColor: "#E8E5DA",
     Component: NeutralEmoji,
   },
-  { key: "sad", label: "Sad", blobColor: colors.moodSad, Component: SadEmoji },
+  {
+    key: "sad",
+    label: "Sad",
+    blobColor: colors.moodSad,
+    faceColor: "#C8DDEF",
+    Component: SadEmoji,
+  },
   {
     key: "angry",
     label: "Angry",
     blobColor: colors.moodAngry,
+    faceColor: "#F4B8B0",
     Component: AngryEmoji,
   },
 ];
@@ -61,7 +72,7 @@ export function MoodPicker({ value, onChange }: Props) {
     <View style={s.root}>
       <Text style={s.heading}>How are you feeling?</Text>
       <View style={s.row}>
-        {MOODS.map(({ key, label, blobColor, Component }) => {
+        {MOODS.map(({ key, label, blobColor, faceColor, Component }) => {
           const selected = value === key;
           return (
             <TouchableOpacity
@@ -70,9 +81,13 @@ export function MoodPicker({ value, onChange }: Props) {
               onPress={() => handlePress(key)}
               activeOpacity={0.75}
             >
-              <View style={[s.faceWrap, selected && { borderColor: blobColor }]}>
-                <Component size={44} blobColor={blobColor} />
-              </View>
+              <Component
+                size={44}
+                shadowColor={selected ? blobColor : "none"}
+                faceColor={selected ? faceColor : "none"}
+                ringColor={colors.textPrimary}
+                dotColor={colors.textPrimary}
+              />
               <Text style={[s.itemLabel, selected && s.itemLabelSelected]}>
                 {label}
               </Text>
@@ -101,12 +116,6 @@ const s = StyleSheet.create({
   item: {
     alignItems: "center",
     gap: spacing[1],
-  },
-  faceWrap: {
-    borderRadius: 999,
-    borderWidth: 2.5,
-    borderColor: "transparent",
-    padding: 2,
   },
   itemLabel: {
     fontFamily: "Caveat",
