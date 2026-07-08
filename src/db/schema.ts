@@ -1,13 +1,19 @@
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
+export const moods = ["happy", "calm", "neutral", "sad", "angry"] as const;
+
 export const entries = sqliteTable("entries", {
   id: integer().primaryKey({ autoIncrement: true }),
   date: text().notNull().unique(),
   journal: text(),
-  mood: text(),
+  mood: text({ enum: moods }),
   coverMediaId: integer("cover_media_id"), // Reference to the Thumbnail media file ID - Foreign key
-  createdAt: integer({ mode: "timestamp" }).notNull(),
-  updatedAt: integer({ mode: "timestamp" }).notNull(),
+  createdAt: integer({ mode: "timestamp" })
+    .notNull()
+    .$default(() => new Date()),
+  updatedAt: integer({ mode: "timestamp" })
+    .notNull()
+    .$default(() => new Date()),
 });
 
 export const media = sqliteTable("media", {
@@ -19,5 +25,10 @@ export const media = sqliteTable("media", {
   caption: text(),
   duration: integer(), // Duration in seconds for videos
   order: integer().notNull().default(0), // Order of media files for a specific entry
-  createdAt: integer({ mode: "timestamp" }).notNull(),
+  createdAt: integer({ mode: "timestamp" })
+    .notNull()
+    .$default(() => new Date()),
 });
+
+export type Media = typeof media.$inferSelect;
+export type Entry = typeof entries.$inferSelect;
