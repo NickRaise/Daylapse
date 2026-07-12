@@ -1,56 +1,119 @@
-# Welcome to your Expo app 👋
+# Daylapse
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+A personal daily journal app for capturing one photo or video clip, a mood, and a few lines of text for each day — then browsing them on a scrollable calendar.
 
-## Get started
+---
 
-1. Install dependencies
+## What it does
 
-   ```bash
-   npm install
-   ```
+**Calendar** — The home screen shows a scrollable calendar spanning ~5 years back and 3 months ahead. Past days with saved entries hide the "+" indicator. Tapping any past or present day opens that day's entry.
 
-2. Start the app
+**Day entry** — Each day has three things to fill in:
 
-   ```bash
-   npx expo start
-   ```
+- **Media** — Capture a photo or video, or pick from your gallery. Saved images appear in a horizontal scroll row; multiple clips are supported.
+- **Journal** — A modal text editor with undo/redo for writing a short note about the day.
+- **Mood** — Five emoji moods (happy, calm, neutral, sad, angry). Selection is saved immediately.
 
-In the output, you'll find options to open the app in a
+**Camera** — Full in-app camera with:
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- Tap shutter for a photo
+- Hold shutter to record a video (switches to video mode automatically)
+- Tap shutter in video mode to toggle record/stop
+- Preview before saving
+- Saves to device gallery and to app-managed storage
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+---
 
-## Get a fresh project
+## Tech stack
 
-When you're ready, run:
+| Layer        | Library                    |
+| ------------ | -------------------------- |
+| Framework    | Expo SDK 56 / React Native |
+| Navigation   | Expo Router (file-based)   |
+| State        | Zustand                    |
+| Database     | SQLite via Drizzle ORM     |
+| File storage | expo-file-system (new API) |
+| Camera       | expo-camera                |
+| Gallery      | expo-media-library         |
+| Styling      | NativeWind (Tailwind CSS)  |
+| Language     | TypeScript                 |
 
-```bash
-npm run reset-project
+---
+
+## Project structure
+
+```
+src/
+  app/
+    (tabs)/calendar/    # Main calendar screen
+    (screens)/day.tsx   # Per-day entry screen
+    (screens)/camera.tsx
+  components/
+    calendar/           # MonthView, DayCell, layout helpers
+    camera/             # CameraViewfinder, CameraControls, CameraPreview
+    journal/            # JournalEditor modal, MoodPicker
+    sections/           # SuggestionSection
+  db/
+    schema.ts           # Drizzle table definitions (entries, media)
+    index.ts            # SQLite connection + migration runner
+    migrations/
+  repositories/
+    entry.repository.ts # CRUD for entries table
+    media.repository.ts # CRUD for media table
+  service/
+    media.service.ts    # File copy/delete in app storage
+  store/
+    entry.store.ts      # Zustand — entry cache, createEntry, mood/journal sync
+    media.store.ts      # Zustand — recently saved media URI
+  types/
+    index.ts            # Shared types (Mood, IEntry, IMedia)
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+---
 
-### Other setup steps
+## Data model
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+**entries** — one row per calendar day
 
-## Learn more
+- `date` (unique) — date key in `YYYY-MM-DD` format
+- `journal` — free-text note
+- `mood` — one of `happy | calm | neutral | sad | angry`
+- `coverMediaId` — FK to the primary media item
 
-To learn more about developing your project with Expo, look at the following resources:
+**media** — one or more rows per entry
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- `entryId` — FK to entries
+- `type` — `image | video`
+- `uri` — path in app-managed storage (stable, not a temp URI)
+- `order` — display order within the entry
+- `duration`, `thumbnailUri`, `caption` — optional video metadata
 
-## Join the community
+---
 
-Join our community of developers creating universal apps.
+## State and caching
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The Zustand entry store pre-loads all entries in the visible calendar range (one batched DB query on calendar mount). Opening any previously visited day is instant — no DB read, no loading state. New days hit the DB once and are added to the cache. Mood and journal updates are optimistic: the UI updates immediately, the DB write happens in the background.
+
+---
+
+## Running locally
+
+```bash
+npm install
+npx expo start
+```
+
+Requires a development build (not Expo Go) because the app uses:
+
+- `expo-camera` with microphone permissions
+- `expo-media-library` (legacy API)
+- `expo-file-system` new Directory/File API
+- SQLite migrations via `expo-sqlite`
+
+Build a dev client with:
+
+```bash
+npx expo run:android
+# or
+npx expo run:ios
+```
