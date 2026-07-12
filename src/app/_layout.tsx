@@ -6,10 +6,11 @@ import { migrateDb } from "@/db";
 import { useEffect, useState } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
+const STACK_SCREEN_OPTIONS = { headerShown: false } as const;
+const FONTS = { Caveat: Caveat_400Regular } as const;
+
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
-    Caveat: Caveat_400Regular,
-  });
+  const [fontsLoaded] = useFonts(FONTS);
 
   const [ready, setReady] = useState(false);
 
@@ -29,7 +30,7 @@ export default function RootLayout() {
   return (
     <>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack screenOptions={STACK_SCREEN_OPTIONS} />
     </>
   );
 }
