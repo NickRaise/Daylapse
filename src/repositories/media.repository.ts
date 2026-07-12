@@ -4,7 +4,7 @@ import { Media, media } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export class MediaRepository {
-  async addMedia(data: IMedia): Promise<number | null> {
+  static async addMedia(data: IMedia): Promise<number | null> {
     try {
       const newMedia = await db.insert(media).values({
         entryId: data.entryId,
@@ -22,7 +22,7 @@ export class MediaRepository {
     }
   }
 
-  async getMediaByEntry(entryId: number): Promise<Media[]> {
+  static async getMediaByEntry(entryId: number): Promise<Media[]> {
     try {
       const mediaFiles = await db
         .select()
@@ -35,7 +35,7 @@ export class MediaRepository {
     }
   }
 
-  async getMediaById(id: number): Promise<Media | null> {
+  static async getMediaById(id: number): Promise<Media | null> {
     try {
       const mediaFile = await db.select().from(media).where(eq(media.id, id));
       return mediaFile[0] || null;
@@ -45,7 +45,7 @@ export class MediaRepository {
     }
   }
 
-  async updateCaption(id: number, caption: string): Promise<boolean> {
+  static async updateCaption(id: number, caption: string): Promise<boolean> {
     try {
       await db.update(media).set({ caption }).where(eq(media.id, id));
       return true;
@@ -55,7 +55,7 @@ export class MediaRepository {
     }
   }
 
-  async updateOrder(id: number, order: number): Promise<boolean> {
+  static async updateOrder(id: number, order: number): Promise<boolean> {
     try {
       await db.update(media).set({ order }).where(eq(media.id, id));
       return true;
@@ -65,7 +65,7 @@ export class MediaRepository {
     }
   }
 
-  async deleteMedia(id: number): Promise<boolean> {
+  static async deleteMedia(id: number): Promise<boolean> {
     try {
       await db.delete(media).where(eq(media.id, id));
       return true;
@@ -75,7 +75,7 @@ export class MediaRepository {
     }
   }
 
-  async deleteByEntry(entryId: number): Promise<boolean> {
+  static async deleteByEntry(entryId: number): Promise<boolean> {
     try {
       await db.delete(media).where(eq(media.entryId, entryId));
       return true;

@@ -4,15 +4,13 @@ import { entries, Entry } from "@/db/schema";
 import { and, eq, lte, gte } from "drizzle-orm";
 
 export class EntryRepository {
-  async createEntry(entry: IEntry): Promise<number | null> {
+  static async createEntry(entry: IEntry): Promise<number | null> {
     try {
       const newEntry = await db.insert(entries).values({
         date: entry.dateKey,
         journal: entry.journal,
         mood: entry.mood,
-        ...(entry.coverMedia !== undefined
-          ? { coverMediaId: entry.coverMedia }
-          : {}),
+        coverMediaId: entry.coverMediaId,
       });
       return Number(newEntry.lastInsertRowId);
     } catch (error) {
@@ -21,7 +19,7 @@ export class EntryRepository {
     }
   }
 
-  async getEntryByDate(dateKey: string): Promise<Entry | null> {
+  static async getEntryByDate(dateKey: string): Promise<Entry | null> {
     try {
       const entry = await db
         .select()
@@ -34,7 +32,7 @@ export class EntryRepository {
     }
   }
 
-  async getEntryById(id: number): Promise<Entry | null> {
+  static async getEntryById(id: number): Promise<Entry | null> {
     try {
       const entry = await db.select().from(entries).where(eq(entries.id, id));
       return entry[0] || null;
@@ -44,7 +42,10 @@ export class EntryRepository {
     }
   }
 
-  async updateJournalEntry(id: number, journal: string): Promise<boolean> {
+  static async updateJournalEntry(
+    id: number,
+    journal: string,
+  ): Promise<boolean> {
     try {
       await db.update(entries).set({ journal }).where(eq(entries.id, id));
       return true;
@@ -54,7 +55,7 @@ export class EntryRepository {
     }
   }
 
-  async updateMood(id: number, mood: Mood): Promise<boolean> {
+  static async updateMood(id: number, mood: Mood): Promise<boolean> {
     try {
       await db.update(entries).set({ mood }).where(eq(entries.id, id));
       return true;
@@ -64,7 +65,10 @@ export class EntryRepository {
     }
   }
 
-  async updateCoverMedia(id: number, coverMediaId: number): Promise<boolean> {
+  static async updateCoverMedia(
+    id: number,
+    coverMediaId: number,
+  ): Promise<boolean> {
     try {
       await db.update(entries).set({ coverMediaId }).where(eq(entries.id, id));
       return true;
@@ -74,7 +78,7 @@ export class EntryRepository {
     }
   }
 
-  async getEntriesByDateRange(
+  static async getEntriesByDateRange(
     startDate: string,
     endDate: string,
   ): Promise<Entry[] | null> {
@@ -90,7 +94,7 @@ export class EntryRepository {
     }
   }
 
-  async deleteEntry(id: number): Promise<boolean> {
+  static async deleteEntry(id: number): Promise<boolean> {
     try {
       await db.delete(entries).where(eq(entries.id, id));
       return true;

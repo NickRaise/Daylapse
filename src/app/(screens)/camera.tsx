@@ -88,8 +88,9 @@ export default function Camera() {
     setRecordingDuration(0);
   }
 
-  async function saveToGallery(uri: string) {
-    await MediaLibrary.createAssetAsync(uri);
+  async function saveToGallery(uri: string): Promise<string> {
+    const response = await MediaLibrary.createAssetAsync(uri);
+    return response.uri;
   }
 
   // ── Capture handlers ──────────────────────────────────────────────────────
@@ -177,8 +178,13 @@ export default function Camera() {
 
   async function handleSave() {
     if (!preview) return;
-    await saveToGallery(preview.uri);
-    setPreview(null);
+    const uri = await saveToGallery(preview.uri);
+    if (uri) {
+      setPreview(null);
+    }
+    console.log("Saved to gallery:", uri);
+    // TODO: Store the URI in the global state
+    router.back();
   }
 
   async function handleGallery() {

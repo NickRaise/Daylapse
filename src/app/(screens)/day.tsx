@@ -1,13 +1,15 @@
 import { colors } from "@/theme";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseDateKey } from "@/components/calendar/utils";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
 import { JournalEditor } from "@/components/journal/JournalEditor";
 import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
+import { EntryRepository } from "@/repositories/entry.repository";
+import { MediaRepository } from "@/repositories/media.repository";
 
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
@@ -22,6 +24,36 @@ export default function DayScreen() {
     () => quotes[Math.floor(Math.random() * quotes.length)],
     [],
   );
+
+  useEffect(() => {
+    // If media uri present in global state
+    // Create a new entry for the day
+    // const entry = async () => {
+    //   // Dummy implementation for entry creation
+    //   console.log("Running the dummy storage function for entry creation...");
+    //   const URI =
+    //     "file:///storage/emulated/0/DCIM/e0550b2e-795d-4a0f-9218-b5f699cf8314.jpg";
+    //   const newEntryId = await EntryRepository.createEntry({
+    //     dateKey,
+    //     journal: journalText,
+    //     mood: mood || "neutral", // Default mood if not set
+    //   });
+    //   console.log("New entry created with ID:", newEntryId);
+    //   console.log("Fetched entry:", entry);
+    //   const newMediaId = await MediaRepository.addMedia({
+    //     entryId: newEntryId!,
+    //     type: "image",
+    //     uri: URI,
+    //     order: 0,
+    //   });
+    //   console.log("Media added for entry ID:", newEntryId);
+    //   if (newEntryId) {
+    //     const entry = await EntryRepository.getEntryById(newEntryId);
+    //     console.log("Fetched entry:", entry);
+    //   }
+    // };
+    // entry();
+  }, []);
 
   const handleOpenCurrentDay = () => {
     // redirect to camera / Gallery
