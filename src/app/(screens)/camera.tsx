@@ -16,6 +16,10 @@ import { CameraPermission } from "../../components/camera/CameraPermission";
 import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls } from "../../components/camera/CameraControls";
 import { CameraPreview } from "../../components/camera/CameraPreview";
+import useMediaStore from "@/store/media.store";
+import useEntryStore from "@/store/entry.store";
+import { MediaRepository } from "@/repositories/media.repository";
+import { mediaService } from "@/service/media.service";
 
 type Preview = { uri: string; type: "photo" | "video"; isLoading?: boolean };
 
@@ -25,6 +29,10 @@ export default function Camera() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isHoldRecordingRef = useRef(false); // sync ref — avoids stale closure in handleReleaseCapture
   const cameraReadyResolverRef = useRef<(() => void) | null>(null);
+  const setRecentlySavedMediaURI = useMediaStore(
+    (state) => state.setRecentlySavedMediaURI,
+  );
+  const currentEntryId = useEntryStore((state) => state.currentId);
 
   const [facing, setFacing] = useState<CameraType>("back");
   const [mode, setMode] = useState<CameraMode>("picture"); // UI toggle
@@ -178,12 +186,25 @@ export default function Camera() {
 
   async function handleSave() {
     if (!preview) return;
-    const uri = await saveToGallery(preview.uri);
-    if (uri) {
-      setPreview(null);
+
+    const galleryUri = await saveToGallery(preview.uri);
+
+    // Copy to app-managed storage so the URI remains stable
+    const localUri = await mediaService.copyMedia(preview.uri);
+
+    if (currentEntryId !== null) {
+      const existingMedia =
+        await MediaRepository.getMediaByEntry(currentEntryId);
+      await MediaRepository.addMedia({
+        entryId: currentEntryId,
+        type: preview.type === "photo" ? "image" : "video",
+        uri: localUri,
+        order: existingMedia.length,
+      });
     }
-    console.log("Saved to gallery:", uri);
-    // TODO: Store the URI in the global state
+
+    setPreview(null);
+    setRecentlySavedMediaURI(galleryUri);
     router.back();
   }
 
