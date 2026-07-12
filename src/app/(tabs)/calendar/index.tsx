@@ -1,12 +1,6 @@
-import { useRef, useMemo, useCallback, useState } from "react";
+import { useRef, useMemo, useCallback, useEffect } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import {
-  FlatList,
-  View,
-  StyleSheet,
-  Platform,
-  LayoutChangeEvent,
-} from "react-native";
+import { FlatList, View, StyleSheet, LayoutChangeEvent } from "react-native";
 import MonthView from "../../../components/calendar/MonthView";
 import {
   NUM_COLUMNS,
@@ -23,9 +17,17 @@ import {
   type MonthData,
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
+import useEntryStore from "@/store/entry.store";
 
 const PAST_MONTHS = 60; // ~5 years back
 const FUTURE_MONTHS = 3; // 3 months ahead
+
+function toDateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
 
 export default function CalendarScreen() {
   const today = useMemo(() => getTodayKey(), []);
@@ -35,6 +37,34 @@ export default function CalendarScreen() {
     [],
   );
   const router = useRouter();
+
+  const entriesCache = useEntryStore((s) => s.entriesCache);
+  const loadEntriesCache = useEntryStore((s) => s.loadEntriesCache);
+
+  // Compute the date range for the full visible calendar span once
+  const { startDate, endDate } = useMemo(() => {
+    const start = new Date();
+    start.setMonth(start.getMonth() - PAST_MONTHS);
+    start.setDate(1);
+
+    const end = new Date();
+    end.setMonth(end.getMonth() + FUTURE_MONTHS + 1);
+    end.setDate(0); // last day of the FUTURE_MONTHS'th month ahead
+
+    return { startDate: toDateKey(start), endDate: toDateKey(end) };
+  }, []);
+
+  // One batched DB read on mount — populates hasEntry dots for all visible cells
+  useEffect(() => {
+    loadEntriesCache(startDate, endDate);
+  }, []);
+
+  // Derive boolean map for MonthView — only recomputes when cache changes
+  const entries = useMemo<Record<string, boolean>>(() => {
+    const map: Record<string, boolean> = {};
+    for (const k of Object.keys(entriesCache)) map[k] = true;
+    return map;
+  }, [entriesCache]);
 
   const { heights, offsets } = useMemo(() => {
     const h = months.map((m) =>
@@ -86,30 +116,16 @@ export default function CalendarScreen() {
     }, [scrollToToday]),
   );
 
-  const [entries] = useState<Record<string, boolean>>({});
+  const handleDayPress = useCallback(
+    (dateKey: string) => {
+      if (dateKey <= getTodayKey()) {
+        router.push({ pathname: "/day", params: { dateKey } });
+      }
+    },
+    [router],
+  );
 
-  const handleDayPress = useCallback((dateKey: string) => {
-    const currentDateKey = getTodayKey();
-
-    // Navigate only if it's today or past day
-    if (dateKey <= currentDateKey) {
-      console.log("[calendar] day pressed:", dateKey);
-      router.push({
-        pathname: "/day",
-        params: { dateKey },
-      });
-    } else {
-      console.log(
-        "[calendar] future date pressed, navigation blocked:",
-        dateKey,
-      );
-    }
-  }, []);
-
-  const handleDayLongPress = useCallback((dateKey: string) => {
-    console.log("[calendar] long press:", dateKey);
-    console.log("No action defined for long press yet.");
-  }, []);
+  const handleDayLongPress = useCallback((_dateKey: string) => {}, []);
 
   const renderItem = useCallback(
     ({ item }: { item: MonthData }) => (
