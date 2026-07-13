@@ -1,12 +1,9 @@
 import { colors } from "@/theme";
 import {
   ActivityIndicator,
-  Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
@@ -20,15 +17,16 @@ import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
 import useEntryStore from "@/store/entry.store";
 import { MediaRepository } from "@/repositories/media.repository";
 import type { Media } from "@/db/schema";
+import { AddMemoryCard } from "@/components/day/AddMemoryCard";
+import { AddMediaFab } from "@/components/day/AddMediaFab";
+import { MediaPager } from "@/components/day/MediaPager";
 
-const MEDIA_HEIGHT = 300;
 const H_PAD = 20;
 
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
   const { dayName, formattedDate } = parseDateKey(dateKey as string);
   const router = useRouter();
-  const { width: screenWidth } = useWindowDimensions();
 
   const currentId = useEntryStore((s) => s.currentId);
   const isLoading = useEntryStore((s) => s.isLoading);
@@ -41,7 +39,6 @@ export default function DayScreen() {
   const [editingText, setEditingText] = useState("");
   const [journalOpen, setJournalOpen] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<Media[]>([]);
-  const [activePage, setActivePage] = useState(0);
 
   const quote = useMemo(
     () => quotes[Math.floor(Math.random() * quotes.length)],
@@ -74,99 +71,6 @@ export default function DayScreen() {
     saveJournal(editingText);
   };
 
-  const handlePageScroll = (e: {
-    nativeEvent: { contentOffset: { x: number } };
-  }) => {
-    const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-    setActivePage(page);
-  };
-
-  // ── Media area ─────────────────────────────────────────────────────────────
-
-  function AddMemoryCard() {
-    return (
-      <Pressable style={styles.addMemoryCard} onPress={handleOpenCamera}>
-        <FontAwesomeFreeSolid name="plus" size={15} color={colors.textMuted} />
-        <Text style={styles.addMemoryLabel}>Add a memory</Text>
-      </Pressable>
-    );
-  }
-
-  const mediaArea =
-    mediaFiles.length === 0 ? (
-      // Empty state — compact card
-      <View style={styles.addMemoryWrap}>
-        <AddMemoryCard />
-      </View>
-    ) : (
-      <View>
-        {/* Pager — one card per page, full screen width so pagingEnabled snaps cleanly */}
-        <ScrollView
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={handlePageScroll}
-          style={{ width: screenWidth, height: MEDIA_HEIGHT }}
-        >
-          {mediaFiles.map((item) => (
-            <View
-              key={item.id}
-              style={{
-                width: screenWidth,
-                height: MEDIA_HEIGHT,
-                paddingHorizontal: H_PAD,
-              }}
-            >
-              {item.type === "image" ? (
-                <Image
-                  source={{ uri: item.uri }}
-                  style={styles.mediaCard}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={[styles.mediaCard, styles.videoCard]}>
-                  <View style={styles.playBtn}>
-                    <FontAwesomeFreeSolid
-                      name="play"
-                      size={20}
-                      color={colors.textPrimary}
-                      style={{ marginLeft: 2 }}
-                    />
-                  </View>
-                </View>
-              )}
-            </View>
-          ))}
-
-          {/* Add media — last slide */}
-          <View style={{ width: screenWidth, height: MEDIA_HEIGHT, paddingHorizontal: H_PAD, justifyContent: "center" }}>
-            <AddMemoryCard />
-          </View>
-        </ScrollView>
-
-        {/* Page dots — media + add slide */}
-        <View style={styles.dots}>
-          {Array.from({ length: mediaFiles.length + 1 }, (_, i) =>
-            i === mediaFiles.length ? (
-              <Text
-                key="add"
-                style={[styles.dotAdd, i === activePage && styles.dotAddActive]}
-              >
-                +
-              </Text>
-            ) : (
-              <View
-                key={i}
-                style={[styles.dot, i === activePage && styles.dotActive]}
-              />
-            ),
-          )}
-        </View>
-      </View>
-    );
-
-  // ── Render ──────────────────────────────────────────────────────────────────
-
   return (
     <View style={styles.root}>
       {/* Header */}
@@ -181,7 +85,13 @@ export default function DayScreen() {
       <Text style={styles.quoteText}>"{quote}"</Text>
 
       {/* Media */}
-      {mediaArea}
+      {mediaFiles.length === 0 ? (
+        <View style={styles.addMemoryWrap}>
+          <AddMemoryCard onPress={handleOpenCamera} />
+        </View>
+      ) : (
+        <MediaPager mediaFiles={mediaFiles} onAddPress={handleOpenCamera} />
+      )}
 
       {/* Journal */}
       <Pressable style={styles.journalRow} onPress={handleJournalOpen}>
@@ -218,17 +128,7 @@ export default function DayScreen() {
 
       <SuggestionSection dateKey={dateKey} />
 
-      {/* FAB — only when media already exists */}
-      {mediaFiles.length > 0 && (
-        <Pressable style={styles.fab} onPress={handleOpenCamera}>
-          <FontAwesomeFreeSolid
-            name="plus"
-            size={14}
-            color={colors.textOnAccent}
-          />
-          <Text style={styles.fabLabel}>Add media</Text>
-        </Pressable>
-      )}
+      {mediaFiles.length > 0 && <AddMediaFab onPress={handleOpenCamera} />}
 
       <JournalEditor
         visible={journalOpen}
@@ -280,76 +180,9 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ── Add memory card (empty state + last pager slide) ──────────────────────
+  // ── Add memory wrap (empty state) ──────────────────────────────────────────
   addMemoryWrap: {
     marginHorizontal: H_PAD,
-  },
-  addMemoryCard: {
-    height: 110,
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderStyle: "dashed",
-    borderColor: colors.borderDark,
-    backgroundColor: colors.bgSubtle,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 6,
-  },
-  addMemoryLabel: {
-    color: colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // ── Media — pager cards ────────────────────────────────────────────────────
-  mediaCard: {
-    flex: 1,
-    borderRadius: 18,
-    overflow: "hidden",
-  },
-  videoCard: {
-    backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  playBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.bgSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // ── Dots ───────────────────────────────────────────────────────────────────
-  dots: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 5,
-    marginTop: 6,
-  },
-  dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: colors.borderDark,
-  },
-  dotActive: {
-    width: 16,
-    backgroundColor: colors.textSecondary,
-  },
-  dotAdd: {
-    fontSize: 10,
-    lineHeight: 10,
-    color: colors.borderDark,
-    fontWeight: "600",
-  },
-  dotAddActive: {
-    color: colors.textSecondary,
   },
 
   // ── Journal ────────────────────────────────────────────────────────────────
@@ -383,29 +216,5 @@ const styles = StyleSheet.create({
   moodWrap: {
     marginHorizontal: H_PAD,
     marginTop: 12,
-  },
-
-  // ── FAB ────────────────────────────────────────────────────────────────────
-  fab: {
-    position: "absolute",
-    bottom: 50,
-    right: H_PAD,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-    borderRadius: 30,
-    backgroundColor: colors.primary,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  fabLabel: {
-    color: colors.textOnAccent,
-    fontSize: 14,
-    fontWeight: "600",
   },
 });

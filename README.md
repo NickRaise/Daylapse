@@ -35,7 +35,7 @@ A personal daily journal app for capturing one photo or video clip, a mood, and 
 | File storage | expo-file-system (new API) |
 | Camera       | expo-camera                |
 | Gallery      | expo-media-library         |
-| Styling      | NativeWind (Tailwind CSS)  |
+| Styling      | React Native StyleSheet    |
 | Language     | TypeScript                 |
 
 ---
@@ -45,28 +45,28 @@ A personal daily journal app for capturing one photo or video clip, a mood, and 
 ```
 src/
   app/
-    (tabs)/calendar/    # Main calendar screen
-    (screens)/day.tsx   # Per-day entry screen
-    (screens)/camera.tsx
+    (tabs)/
+      calendar/         # Main calendar screen
+      gallery.tsx       # Gallery tab
+      settings.tsx      # Settings tab
+    (screens)/
+      day.tsx           # Per-day entry screen
+      camera.tsx        # In-app camera screen
+    _layout.tsx         # Root layout
   components/
     calendar/           # MonthView, DayCell, layout helpers
-    camera/             # CameraViewfinder, CameraControls, CameraPreview
+    camera/             # Viewfinder, controls, preview, permission
+    day/                # MediaPager, AddMemoryCard, AddMediaFab
     journal/            # JournalEditor modal, MoodPicker
     sections/           # SuggestionSection
+  data/                 # SVG emoji components, quote strings
   db/
-    schema.ts           # Drizzle table definitions (entries, media)
-    index.ts            # SQLite connection + migration runner
-    migrations/
-  repositories/
-    entry.repository.ts # CRUD for entries table
-    media.repository.ts # CRUD for media table
-  service/
-    media.service.ts    # File copy/delete in app storage
-  store/
-    entry.store.ts      # Zustand — entry cache, createEntry, mood/journal sync
-    media.store.ts      # Zustand — recently saved media URI
-  types/
-    index.ts            # Shared types (Mood, IEntry, IMedia)
+    migrations/         # Auto-generated SQL migration files
+  repositories/         # CRUD helpers for entries and media tables
+  service/              # File copy/delete in app-managed storage
+  store/                # Zustand — entry cache, media URI
+  themes/               # Theme tokens (vanilla, blossom, cotton, dusk, sage)
+  types/                # Shared TypeScript types
 ```
 
 ---
