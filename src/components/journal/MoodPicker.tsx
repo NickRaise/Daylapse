@@ -101,8 +101,8 @@ export function MoodPicker({ value, onChange }: Props) {
 
 const s = StyleSheet.create({
   root: {
-    width: "85%",
-    gap: spacing[3],
+    width: "100%",
+    gap: spacing[4],
   },
   heading: {
     fontSize: fontSize.xs,
@@ -112,7 +112,8 @@ const s = StyleSheet.create({
   },
   row: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    justifyContent: "center",
+    gap: spacing[5],
   },
   item: {
     alignItems: "center",
