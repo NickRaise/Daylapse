@@ -1,4 +1,4 @@
-import { colors } from "@/theme";
+import { colors, spacing } from "@/theme";
 import {
   ActivityIndicator,
   Pressable,
@@ -85,13 +85,15 @@ export default function DayScreen() {
       <Text style={styles.quoteText}>"{quote}"</Text>
 
       {/* Media */}
-      {mediaFiles.length === 0 ? (
-        <View style={styles.addMemoryWrap}>
-          <AddMemoryCard onPress={handleOpenCamera} />
-        </View>
-      ) : (
-        <MediaPager mediaFiles={mediaFiles} onAddPress={handleOpenCamera} />
-      )}
+      <View style={styles.mediaWrap}>
+        {mediaFiles.length === 0 ? (
+          <View style={styles.addMemoryWrap}>
+            <AddMemoryCard onPress={handleOpenCamera} />
+          </View>
+        ) : (
+          <MediaPager mediaFiles={mediaFiles} onAddPress={handleOpenCamera} />
+        )}
+      </View>
 
       {/* Journal */}
       <Pressable style={styles.journalRow} onPress={handleJournalOpen}>
@@ -180,15 +182,20 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ── Add memory wrap (empty state) ──────────────────────────────────────────
+  // ── Media area ─────────────────────────────────────────────────────────────
+  mediaWrap: {
+    marginTop: spacing[10],
+    marginBottom: spacing[4],
+  },
   addMemoryWrap: {
     marginHorizontal: H_PAD,
+    marginVertical: 10,
   },
 
   // ── Journal ────────────────────────────────────────────────────────────────
   journalRow: {
     marginHorizontal: H_PAD,
-    marginTop: 10,
+    marginVertical: spacing[3],
     borderWidth: 1,
     borderColor: colors.borderDark,
     borderRadius: 12,
