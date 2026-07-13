@@ -187,24 +187,37 @@ export default function Camera() {
   async function handleSave() {
     if (!preview) return;
 
-    const galleryUri = await saveToGallery(preview.uri);
+    try {
+      console.log("[camera] save started — type:", preview.type, "uri:", preview.uri);
 
-    // Copy to app-managed storage so the URI remains stable
-    const localUri = await mediaService.copyMedia(preview.uri);
+      // Copy to app storage FIRST — on iOS createAssetAsync can move the temp
+      // file into Photos, making preview.uri stale before we can copy it
+      const localUri = await mediaService.copyMedia(preview.uri);
+      console.log("[camera] copied to local storage:", localUri);
 
-    if (currentEntryId !== null) {
-      const existingMedia =
-        await MediaRepository.getMediaByEntry(currentEntryId);
-      await MediaRepository.addMedia({
-        entryId: currentEntryId,
-        type: preview.type === "photo" ? "image" : "video",
-        uri: localUri,
-        order: existingMedia.length,
-      });
+      await saveToGallery(preview.uri);
+      console.log("[camera] saved to device gallery");
+
+      if (currentEntryId !== null) {
+        const existingMedia = await MediaRepository.getMediaByEntry(currentEntryId);
+        const order = existingMedia.length;
+        await MediaRepository.addMedia({
+          entryId: currentEntryId,
+          type: preview.type === "photo" ? "image" : "video",
+          uri: localUri,
+          order,
+        });
+        console.log("[camera] media row saved — entryId:", currentEntryId, "order:", order);
+      } else {
+        console.warn("[camera] no currentEntryId — media row not saved to DB");
+      }
+
+      setPreview(null);
+      setRecentlySavedMediaURI(localUri);
+    } catch (error) {
+      console.error("[camera] save failed:", error);
     }
 
-    setPreview(null);
-    setRecentlySavedMediaURI(galleryUri);
     router.back();
   }
 

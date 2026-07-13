@@ -71,25 +71,8 @@ export default function DayScreen() {
     saveJournal(editingText);
   };
 
-  const images = mediaFiles.filter((m) => m.type === "image");
-  const videos = mediaFiles.filter((m) => m.type === "video");
-
   return (
     <View style={styles.root}>
-      {/* Temporary video indicator — full video UI to be designed */}
-      {videos.length > 0 && (
-        <View style={styles.videoBanner}>
-          <FontAwesomeFreeSolid
-            name="film"
-            size={11}
-            color={colors.textPrimary}
-          />
-          <Text style={styles.videoBannerText}>
-            {videos.length} video{videos.length > 1 ? "s" : ""} saved
-          </Text>
-        </View>
-      )}
-
       <View style={styles.header}>
         <Text style={styles.dateText}>{formattedDate}</Text>
         <Text style={styles.dayText}>{dayName}</Text>
@@ -100,21 +83,31 @@ export default function DayScreen() {
       </View>
 
       <View style={styles.main}>
-        {/* Media area */}
-        {images.length > 0 ? (
+        {/* Media area — images and video placeholders side by side */}
+        {mediaFiles.length > 0 ? (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.imageScroll}
             contentContainerStyle={styles.imageScrollContent}
           >
-            {images.map((img) => (
-              <Image
-                key={img.id}
-                source={{ uri: img.uri }}
-                style={styles.imageThumbnail}
-              />
-            ))}
+            {mediaFiles.map((item) =>
+              item.type === "image" ? (
+                <Image
+                  key={item.id}
+                  source={{ uri: item.uri }}
+                  style={styles.imageThumbnail}
+                />
+              ) : (
+                <View key={item.id} style={styles.videoThumbnail}>
+                  <FontAwesomeFreeSolid
+                    name="play"
+                    size={22}
+                    color={colors.textPrimary}
+                  />
+                </View>
+              ),
+            )}
             <Pressable style={styles.addMoreButton} onPress={handleOpenCamera}>
               <FontAwesomeFreeSolid
                 name="plus"
@@ -187,22 +180,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 40,
   },
-  videoBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    backgroundColor: colors.bgSubtle,
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginBottom: 8,
-    alignSelf: "flex-start",
-  },
-  videoBannerText: {
-    fontSize: 12,
-    color: colors.textPrimary,
-    fontWeight: "500",
-  },
   header: {
     alignSelf: "flex-start",
   },
@@ -262,6 +239,16 @@ const styles = StyleSheet.create({
     height: 150,
     borderRadius: 10,
     resizeMode: "cover",
+  },
+  videoThumbnail: {
+    width: 130,
+    height: 150,
+    borderRadius: 10,
+    backgroundColor: colors.bgSurface,
+    borderWidth: 1,
+    borderColor: colors.borderDark,
+    justifyContent: "center",
+    alignItems: "center",
   },
   addMoreButton: {
     width: 48,

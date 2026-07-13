@@ -42,6 +42,7 @@ const useEntryStore = create<EntryState>((set, get) => ({
   createEntry: async (dateKey: string) => {
     const cached = get().entriesCache[dateKey];
     if (cached) {
+      console.log("[entry] loaded from cache — dateKey:", dateKey, "id:", cached.id);
       set({
         currentId: cached.id,
         currentDateKey: dateKey,
@@ -55,8 +56,12 @@ const useEntryStore = create<EntryState>((set, get) => ({
     try {
       let entry = await EntryRepository.getEntryByDate(dateKey);
       if (!entry) {
+        console.log("[entry] not found in DB — creating new entry for:", dateKey);
         const newId = await EntryRepository.createEntry({ dateKey });
         if (newId) entry = await EntryRepository.getEntryById(newId);
+        console.log("[entry] created — id:", entry?.id);
+      } else {
+        console.log("[entry] loaded from DB — dateKey:", dateKey, "id:", entry.id);
       }
       if (entry) {
         set((s) => ({
