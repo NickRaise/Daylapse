@@ -32,8 +32,6 @@ const s = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 6,
     elevation: 6,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.85)",
   },
   label: {
     color: colors.textOnAccent,
