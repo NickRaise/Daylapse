@@ -83,20 +83,21 @@ export default function DayScreen() {
 
   // ── Media area ─────────────────────────────────────────────────────────────
 
+  function AddMemoryCard() {
+    return (
+      <Pressable style={styles.addMemoryCard} onPress={handleOpenCamera}>
+        <FontAwesomeFreeSolid name="plus" size={15} color={colors.textMuted} />
+        <Text style={styles.addMemoryLabel}>Add a memory</Text>
+      </Pressable>
+    );
+  }
+
   const mediaArea =
     mediaFiles.length === 0 ? (
-      // Empty state — single large card
-      <Pressable style={styles.emptyCard} onPress={handleOpenCamera}>
-        <View style={styles.emptyIconWrap}>
-          <FontAwesomeFreeSolid
-            name="plus"
-            size={18}
-            color={colors.textMuted}
-          />
-        </View>
-        <Text style={styles.emptyLabel}>Add a memory</Text>
-        <Text style={styles.emptyHint}>Photo or video</Text>
-      </Pressable>
+      // Empty state — compact card
+      <View style={styles.addMemoryWrap}>
+        <AddMemoryCard />
+      </View>
     ) : (
       <View>
         {/* Pager — one card per page, full screen width so pagingEnabled snaps cleanly */}
@@ -136,16 +137,30 @@ export default function DayScreen() {
               )}
             </View>
           ))}
+
+          {/* Add media — last slide */}
+          <View style={{ width: screenWidth, height: MEDIA_HEIGHT, paddingHorizontal: H_PAD, justifyContent: "center" }}>
+            <AddMemoryCard />
+          </View>
         </ScrollView>
 
-        {/* Page dots */}
+        {/* Page dots — media + add slide */}
         <View style={styles.dots}>
-          {mediaFiles.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, i === activePage && styles.dotActive]}
-            />
-          ))}
+          {Array.from({ length: mediaFiles.length + 1 }, (_, i) =>
+            i === mediaFiles.length ? (
+              <Text
+                key="add"
+                style={[styles.dotAdd, i === activePage && styles.dotAddActive]}
+              >
+                +
+              </Text>
+            ) : (
+              <View
+                key={i}
+                style={[styles.dot, i === activePage && styles.dotActive]}
+              />
+            ),
+          )}
         </View>
       </View>
     );
@@ -265,37 +280,25 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 
-  // ── Media — empty state ────────────────────────────────────────────────────
-  emptyCard: {
+  // ── Add memory card (empty state + last pager slide) ──────────────────────
+  addMemoryWrap: {
     marginHorizontal: H_PAD,
-    height: MEDIA_HEIGHT,
-    borderRadius: 18,
+  },
+  addMemoryCard: {
+    height: 110,
+    borderRadius: 16,
     borderWidth: 1.5,
     borderStyle: "dashed",
     borderColor: colors.borderDark,
     backgroundColor: colors.bgSubtle,
     justifyContent: "center",
     alignItems: "center",
-    gap: 8,
+    gap: 6,
   },
-  emptyIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.bgSurface,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyLabel: {
+  addMemoryLabel: {
     color: colors.textSecondary,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "600",
-  },
-  emptyHint: {
-    color: colors.textMuted,
-    fontSize: 12,
   },
 
   // ── Media — pager cards ────────────────────────────────────────────────────
@@ -338,6 +341,15 @@ const styles = StyleSheet.create({
   dotActive: {
     width: 16,
     backgroundColor: colors.textSecondary,
+  },
+  dotAdd: {
+    fontSize: 10,
+    lineHeight: 10,
+    color: colors.borderDark,
+    fontWeight: "600",
+  },
+  dotAddActive: {
+    color: colors.textSecondary,
   },
 
   // ── Journal ────────────────────────────────────────────────────────────────
