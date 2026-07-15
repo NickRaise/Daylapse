@@ -22,6 +22,8 @@ const H_PAD = 20;
 type Props = {
   mediaFiles: Media[];
   onAddPress: () => void;
+  onDelete: (id: number) => void;
+  onOpenReorder: () => void;
 };
 
 type Selected = { uri: string; type: "image" | "video" } | null;
@@ -49,17 +51,52 @@ function VideoLightbox({
   );
 }
 
-export function MediaPager({ mediaFiles, onAddPress }: Props) {
+function ActionsBar({
+  onOpenReorder,
+  onDelete,
+}: {
+  onOpenReorder: () => void;
+  onDelete: () => void;
+}) {
+  return (
+    <View style={s.actionsBar}>
+      <Pressable style={[s.actionBtn, s.reorderBtn]} onPress={onOpenReorder}>
+        <FontAwesomeFreeSolid
+          name="grip-lines"
+          size={13}
+          color={colors.textPrimary}
+        />
+        <Text style={s.reorderBtnText}>Reorder</Text>
+      </Pressable>
+      <Pressable style={s.actionBtn} onPress={onDelete}>
+        <FontAwesomeFreeSolid name="trash" size={14} color={colors.error} />
+      </Pressable>
+    </View>
+  );
+}
+
+export function MediaPager({
+  mediaFiles,
+  onAddPress,
+  onDelete,
+  onOpenReorder,
+}: Props) {
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [activePage, setActivePage] = useState(0);
   const [selected, setSelected] = useState<Selected>(null);
+  const [openOptionsId, setOpenOptionsId] = useState<number | null>(null);
 
   const handlePageScroll = (e: {
     nativeEvent: { contentOffset: { x: number } };
   }) => {
     const page = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
     setActivePage(page);
+    setOpenOptionsId(null);
   };
+
+  function toggleOptions(id: number) {
+    setOpenOptionsId((prev) => (prev === id ? null : id));
+  }
 
   return (
     <View>
@@ -70,50 +107,93 @@ export function MediaPager({ mediaFiles, onAddPress }: Props) {
         onMomentumScrollEnd={handlePageScroll}
         style={{ width: screenWidth, height: MEDIA_HEIGHT }}
       >
-        {mediaFiles.map((item) => (
-          <View
-            key={item.id}
-            style={{
-              width: screenWidth,
-              height: MEDIA_HEIGHT,
-              paddingHorizontal: H_PAD,
-            }}
-          >
-            {item.type === "image" ? (
-              <Pressable
-                style={s.mediaCard}
-                onPress={() => setSelected({ uri: item.uri, type: "image" })}
-              >
-                <Image
-                  source={{ uri: item.uri }}
-                  style={StyleSheet.absoluteFill}
-                  resizeMode="cover"
-                />
-              </Pressable>
-            ) : (
-              <Pressable
-                style={[s.mediaCard, s.videoCard]}
-                onPress={() => setSelected({ uri: item.uri, type: "video" })}
-              >
-                {item.thumbnailUri ? (
+        {mediaFiles.map((item) => {
+          const optionsOpen = openOptionsId === item.id;
+
+          const handleCardPress = () => {
+            if (optionsOpen) {
+              setOpenOptionsId(null);
+            } else if (item.type === "image") {
+              setSelected({ uri: item.uri, type: "image" });
+            } else {
+              setSelected({ uri: item.uri, type: "video" });
+            }
+          };
+
+          const handleDelete = () => {
+            onDelete(item.id);
+            setOpenOptionsId(null);
+          };
+
+          const handleReorder = () => {
+            setOpenOptionsId(null);
+            onOpenReorder();
+          };
+
+          return (
+            <View
+              key={item.id}
+              style={{
+                width: screenWidth,
+                height: MEDIA_HEIGHT,
+                paddingHorizontal: H_PAD,
+              }}
+            >
+              {item.type === "image" ? (
+                <Pressable style={s.mediaCard} onPress={handleCardPress}>
                   <Image
-                    source={{ uri: item.thumbnailUri }}
+                    source={{ uri: item.uri }}
                     style={StyleSheet.absoluteFill}
                     resizeMode="cover"
                   />
-                ) : null}
-                <View style={s.playBtn}>
-                  <FontAwesomeFreeSolid
-                    name="play"
-                    size={20}
-                    color={colors.textPrimary}
-                    style={{ marginLeft: 2 }}
+                  <Pressable
+                    style={s.optionsBtn}
+                    onPress={() => toggleOptions(item.id)}
+                  >
+                    <FontAwesomeFreeSolid name="pen" size={11} color="#fff" />
+                  </Pressable>
+                  {optionsOpen && (
+                    <ActionsBar
+                      onOpenReorder={handleReorder}
+                      onDelete={handleDelete}
+                    />
+                  )}
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={[s.mediaCard, s.videoCard]}
+                  onPress={handleCardPress}
+                >
+                  <Image
+                    source={{ uri: item.thumbnailUri ?? item.uri }}
+                    style={StyleSheet.absoluteFill}
+                    resizeMode="cover"
                   />
-                </View>
-              </Pressable>
-            )}
-          </View>
-        ))}
+                  <View style={s.playBtn}>
+                    <FontAwesomeFreeSolid
+                      name="play"
+                      size={20}
+                      color={colors.textPrimary}
+                      style={{ marginLeft: 2 }}
+                    />
+                  </View>
+                  <Pressable
+                    style={s.optionsBtn}
+                    onPress={() => toggleOptions(item.id)}
+                  >
+                    <FontAwesomeFreeSolid name="pen" size={11} color="#fff" />
+                  </Pressable>
+                  {optionsOpen && (
+                    <ActionsBar
+                      onOpenReorder={handleReorder}
+                      onDelete={handleDelete}
+                    />
+                  )}
+                </Pressable>
+              )}
+            </View>
+          );
+        })}
 
         {/* Add media — last slide */}
         <View
@@ -200,6 +280,50 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  optionsBtn: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  actionsBar: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.65)",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  reorderBtn: {
+    flexDirection: "row",
+    gap: 8,
+    paddingHorizontal: 14,
+    width: "auto",
+  },
+  reorderBtnText: {
+    fontSize: 13,
+    fontWeight: "500",
+    color: colors.textPrimary,
+  },
+  actionBtn: {
+    height: 36,
+    width: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -226,7 +350,6 @@ const s = StyleSheet.create({
   dotAddActive: {
     color: colors.textSecondary,
   },
-  // ── Lightbox ────────────────────────────────────────────────────────────────
   lightbox: {
     flex: 1,
     backgroundColor: "#000",

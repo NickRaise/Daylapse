@@ -20,6 +20,7 @@ import type { Media } from "@/db/schema";
 import { AddMemoryCard } from "@/components/day/AddMemoryCard";
 import { AddMediaFab } from "@/components/day/AddMediaFab";
 import { MediaPager } from "@/components/day/MediaPager";
+import { ReorderModal } from "@/components/day/ReorderModal";
 
 const H_PAD = 20;
 
@@ -39,6 +40,7 @@ export default function DayScreen() {
   const [editingText, setEditingText] = useState("");
   const [journalOpen, setJournalOpen] = useState(false);
   const [mediaFiles, setMediaFiles] = useState<Media[]>([]);
+  const [reorderVisible, setReorderVisible] = useState(false);
 
   const quote = useMemo(
     () => quotes[Math.floor(Math.random() * quotes.length)],
@@ -59,6 +61,19 @@ export default function DayScreen() {
 
   const handleOpenCamera = () => {
     router.push({ pathname: "/camera", params: { dateKey } });
+  };
+
+  const handleDeleteMedia = async (id: number) => {
+    await MediaRepository.deleteMedia(id);
+    setMediaFiles((prev) => prev.filter((m) => m.id !== id));
+  };
+
+  const handleSaveOrder = async (newOrder: Media[]) => {
+    setReorderVisible(false);
+    setMediaFiles(newOrder);
+    await Promise.all(
+      newOrder.map((item, index) => MediaRepository.updateOrder(item.id, index)),
+    );
   };
 
   const handleJournalOpen = () => {
@@ -94,7 +109,12 @@ export default function DayScreen() {
         </View>
       ) : (
         <View style={styles.mediaWrap}>
-          <MediaPager mediaFiles={mediaFiles} onAddPress={handleOpenCamera} />
+          <MediaPager
+            mediaFiles={mediaFiles}
+            onAddPress={handleOpenCamera}
+            onDelete={handleDeleteMedia}
+            onOpenReorder={() => setReorderVisible(true)}
+          />
         </View>
       )}
 
@@ -134,6 +154,13 @@ export default function DayScreen() {
       <SuggestionSection dateKey={dateKey} />
 
       {mediaFiles.length > 0 && <AddMediaFab onPress={handleOpenCamera} />}
+
+      <ReorderModal
+        visible={reorderVisible}
+        mediaFiles={mediaFiles}
+        onSave={handleSaveOrder}
+        onCancel={() => setReorderVisible(false)}
+      />
 
       <JournalEditor
         visible={journalOpen}
