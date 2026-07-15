@@ -23,7 +23,7 @@ export function ReorderModal({ visible, mediaFiles, onSave, onCancel }: Props) {
   const renderItem = ({ item }: { item: Media }) => (
     <View style={s.card}>
       <Image
-        source={{ uri: item.thumbnailUri ?? item.uri }}
+        source={{ uri: item.uri }}
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       />

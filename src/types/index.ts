@@ -14,7 +14,6 @@ export interface IMedia {
   type: "image" | "video";
   uri: string;
   caption?: string;
-  thumbnailUri?: string; // Optional thumbnail URI for videos
   duration?: number; // Optional duration for videos
   order: number;
 }

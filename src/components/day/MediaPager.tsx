@@ -165,7 +165,7 @@ export function MediaPager({
                   onPress={handleCardPress}
                 >
                   <Image
-                    source={{ uri: item.thumbnailUri ?? item.uri }}
+                    source={{ uri: item.uri }}
                     style={StyleSheet.absoluteFill}
                     resizeMode="cover"
                   />

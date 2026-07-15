@@ -11,7 +11,6 @@ export class MediaRepository {
         type: data.type,
         uri: data.uri,
         caption: data.caption,
-        thumbnailUri: data.thumbnailUri,
         duration: data.duration,
         order: data.order,
       });
