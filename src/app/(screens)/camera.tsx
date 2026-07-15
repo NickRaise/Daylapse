@@ -20,6 +20,7 @@ import useMediaStore from "@/store/media.store";
 import useEntryStore from "@/store/entry.store";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
+import * as VideoThumbnails from "expo-video-thumbnails";
 
 type Preview = { uri: string; type: "photo" | "video"; isLoading?: boolean };
 
@@ -201,10 +202,23 @@ export default function Camera() {
       if (currentEntryId !== null) {
         const existingMedia = await MediaRepository.getMediaByEntry(currentEntryId);
         const order = existingMedia.length;
+
+        let thumbnailUri: string | undefined;
+        if (preview.type === "video") {
+          try {
+            const { uri } = await VideoThumbnails.getThumbnailAsync(localUri, { time: 0 });
+            thumbnailUri = uri;
+            console.log("[camera] thumbnail generated:", thumbnailUri);
+          } catch (e) {
+            console.warn("[camera] thumbnail generation failed:", e);
+          }
+        }
+
         await MediaRepository.addMedia({
           entryId: currentEntryId,
           type: preview.type === "photo" ? "image" : "video",
           uri: localUri,
+          thumbnailUri,
           order,
         });
         console.log("[camera] media row saved — entryId:", currentEntryId, "order:", order);
