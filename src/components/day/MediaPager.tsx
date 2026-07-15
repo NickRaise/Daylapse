@@ -177,9 +177,9 @@ export function MediaPager({
                   <View style={s.playBtn}>
                     <FontAwesomeFreeSolid
                       name="play"
-                      size={20}
-                      color={colors.textPrimary}
-                      style={{ marginLeft: 2 }}
+                      size={28}
+                      color="#fff"
+                      style={{ marginLeft: 3 }}
                     />
                   </View>
                   <Pressable
@@ -281,12 +281,6 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   playBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.bgSubtle,
-    borderWidth: 1,
-    borderColor: colors.borderDark,
     justifyContent: "center",
     alignItems: "center",
   },
