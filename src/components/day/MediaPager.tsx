@@ -148,9 +148,14 @@ export function MediaPager({
                   />
                   <Pressable
                     style={s.optionsBtn}
+                    hitSlop={12}
                     onPress={() => toggleOptions(item.id)}
                   >
-                    <FontAwesomeFreeSolid name="pen" size={11} color="#fff" />
+                    <FontAwesomeFreeSolid
+                      name="sliders"
+                      size={22}
+                      color={colors.textPrimary}
+                    />
                   </Pressable>
                   {optionsOpen && (
                     <ActionsBar
@@ -179,9 +184,14 @@ export function MediaPager({
                   </View>
                   <Pressable
                     style={s.optionsBtn}
+                    hitSlop={12}
                     onPress={() => toggleOptions(item.id)}
                   >
-                    <FontAwesomeFreeSolid name="pen" size={11} color="#fff" />
+                    <FontAwesomeFreeSolid
+                      name="sliders"
+                      size={22}
+                      color={colors.textPrimary}
+                    />
                   </Pressable>
                   {optionsOpen && (
                     <ActionsBar
@@ -284,12 +294,7 @@ const s = StyleSheet.create({
     position: "absolute",
     top: 10,
     right: 10,
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
+    padding: 6,
   },
   actionsBar: {
     position: "absolute",
