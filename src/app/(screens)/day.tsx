@@ -85,15 +85,18 @@ export default function DayScreen() {
       <Text style={styles.quoteText}>"{quote}"</Text>
 
       {/* Media */}
-      <View style={styles.mediaWrap}>
-        {mediaFiles.length === 0 ? (
-          <View style={styles.addMemoryWrap}>
-            <AddMemoryCard onPress={handleOpenCamera} />
-          </View>
-        ) : (
+      {mediaFiles.length === 0 ? (
+        <View style={styles.emptyMediaWrap}>
+          <AddMemoryCard
+            onPress={handleOpenCamera}
+            style={styles.emptyMemoryCard}
+          />
+        </View>
+      ) : (
+        <View style={styles.mediaWrap}>
           <MediaPager mediaFiles={mediaFiles} onAddPress={handleOpenCamera} />
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Journal */}
       <Pressable style={styles.journalRow} onPress={handleJournalOpen}>
@@ -176,20 +179,25 @@ const styles = StyleSheet.create({
   quoteText: {
     fontFamily: "Caveat",
     fontSize: 17,
-    color: colors.textMuted,
+    color: colors.textSecondary,
     paddingHorizontal: H_PAD,
-    marginBottom: 12,
+    marginTop: spacing[3],
+    marginBottom: spacing[10],
     lineHeight: 22,
   },
 
   // ── Media area ─────────────────────────────────────────────────────────────
   mediaWrap: {
-    marginTop: spacing[10],
-    marginBottom: spacing[4],
+    marginTop: spacing[3],
+    marginBottom: spacing[2],
   },
-  addMemoryWrap: {
+  emptyMediaWrap: {
     marginHorizontal: H_PAD,
-    marginVertical: 10,
+    marginTop: 80,
+    marginBottom: 32,
+  },
+  emptyMemoryCard: {
+    height: 160,
   },
 
   // ── Journal ────────────────────────────────────────────────────────────────

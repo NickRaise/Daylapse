@@ -1,12 +1,12 @@
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Pressable, StyleSheet, Text, type ViewStyle } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors } from "@/theme";
 
-type Props = { onPress: () => void };
+type Props = { onPress: () => void; style?: ViewStyle };
 
-export function AddMemoryCard({ onPress }: Props) {
+export function AddMemoryCard({ onPress, style }: Props) {
   return (
-    <Pressable style={s.card} onPress={onPress}>
+    <Pressable style={[s.card, style]} onPress={onPress}>
       <FontAwesomeFreeSolid name="plus" size={15} color={colors.textMuted} />
       <Text style={s.label}>Add a memory</Text>
     </Pressable>
