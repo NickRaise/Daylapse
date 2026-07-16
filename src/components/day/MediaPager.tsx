@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Image,
   Modal,
@@ -18,6 +18,12 @@ import { AddMemoryCard } from "./AddMemoryCard";
 
 const MEDIA_HEIGHT = 300;
 const H_PAD = 20;
+
+function formatDuration(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
 
 type Props = {
   mediaFiles: Media[];
@@ -71,6 +77,47 @@ function ActionsBar({
         </Pressable>
       </View>
     </View>
+  );
+}
+
+type VideoCardProps = {
+  item: Media;
+  optionsOpen: boolean;
+  onPress: () => void;
+  onToggleOptions: () => void;
+  onReorder: () => void;
+  onDelete: () => void;
+};
+
+function VideoCard({ item, optionsOpen, onPress, onToggleOptions, onReorder, onDelete }: VideoCardProps) {
+  const [duration, setDuration] = useState<number | null>(item.duration ?? null);
+
+  const player = useVideoPlayer(item.uri, (p) => {
+    p.muted = true;
+  });
+
+  useEffect(() => {
+    const sub = player.addListener("statusChange", ({ status }) => {
+      if (status === "readyToPlay" && player.duration > 0) {
+        setDuration(Math.round(player.duration));
+      }
+    });
+    return () => sub.remove();
+  }, [player]);
+
+  return (
+    <Pressable style={[s.mediaCard, s.videoCard]} onPress={onPress}>
+      <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+      {duration != null && !optionsOpen && (
+        <View style={s.durationBadge}>
+          <Text style={s.durationText}>{formatDuration(duration)}</Text>
+        </View>
+      )}
+      <Pressable style={s.optionsBtn} hitSlop={12} onPress={onToggleOptions}>
+        <FontAwesomeFreeSolid name="sliders" size={22} color={colors.textOnAccent} />
+      </Pressable>
+      {optionsOpen && <ActionsBar onOpenReorder={onReorder} onDelete={onDelete} />}
+    </Pressable>
   );
 }
 
@@ -165,41 +212,14 @@ export function MediaPager({
                   )}
                 </Pressable>
               ) : (
-                <Pressable
-                  style={[s.mediaCard, s.videoCard]}
+                <VideoCard
+                  item={item}
+                  optionsOpen={optionsOpen}
                   onPress={handleCardPress}
-                >
-                  <Image
-                    source={{ uri: item.uri }}
-                    style={StyleSheet.absoluteFill}
-                    resizeMode="cover"
-                  />
-                  <View style={s.playBtn}>
-                    <FontAwesomeFreeSolid
-                      name="play"
-                      size={28}
-                      color="#fff"
-                      style={{ marginLeft: 3 }}
-                    />
-                  </View>
-                  <Pressable
-                    style={s.optionsBtn}
-                    hitSlop={12}
-                    onPress={() => toggleOptions(item.id)}
-                  >
-                    <FontAwesomeFreeSolid
-                      name="sliders"
-                      size={22}
-                      color={colors.textOnAccent}
-                    />
-                  </Pressable>
-                  {optionsOpen && (
-                    <ActionsBar
-                      onOpenReorder={handleReorder}
-                      onDelete={handleDelete}
-                    />
-                  )}
-                </Pressable>
+                  onToggleOptions={() => toggleOptions(item.id)}
+                  onReorder={handleReorder}
+                  onDelete={handleDelete}
+                />
               )}
             </View>
           );
@@ -317,9 +337,20 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  playBtn: {
-    justifyContent: "center",
-    alignItems: "center",
+  durationBadge: {
+    position: "absolute",
+    bottom: 10,
+    left: 10,
+    backgroundColor: colors.textPrimary,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  durationText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.bg,
+    letterSpacing: 0.3,
   },
   optionsBtn: {
     position: "absolute",
