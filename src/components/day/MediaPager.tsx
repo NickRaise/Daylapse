@@ -60,17 +60,16 @@ function ActionsBar({
 }) {
   return (
     <View style={s.actionsBar}>
-      <Pressable style={[s.actionBtn, s.reorderBtn]} onPress={onOpenReorder}>
-        <FontAwesomeFreeSolid
-          name="grip-lines"
-          size={13}
-          color={colors.textPrimary}
-        />
-        <Text style={s.reorderBtnText}>Reorder</Text>
-      </Pressable>
-      <Pressable style={s.actionBtn} onPress={onDelete}>
-        <FontAwesomeFreeSolid name="trash" size={14} color={colors.error} />
-      </Pressable>
+      <View style={s.actionsPill}>
+        <Pressable style={s.actionReorder} onPress={onOpenReorder}>
+          <FontAwesomeFreeSolid name="grip-lines" size={12} color={colors.textSecondary} />
+          <Text style={s.reorderBtnText}>Reorder</Text>
+        </Pressable>
+        <View style={s.actionDivider} />
+        <Pressable style={s.actionDelete} onPress={onDelete}>
+          <FontAwesomeFreeSolid name="trash" size={13} color={colors.error} />
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -85,6 +84,7 @@ export function MediaPager({
   const [activePage, setActivePage] = useState(0);
   const [selected, setSelected] = useState<Selected>(null);
   const [openOptionsId, setOpenOptionsId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   const handlePageScroll = (e: {
     nativeEvent: { contentOffset: { x: number } };
@@ -121,8 +121,8 @@ export function MediaPager({
           };
 
           const handleDelete = () => {
-            onDelete(item.id);
             setOpenOptionsId(null);
+            setConfirmDeleteId(item.id);
           };
 
           const handleReorder = () => {
@@ -154,7 +154,7 @@ export function MediaPager({
                     <FontAwesomeFreeSolid
                       name="sliders"
                       size={22}
-                      color={colors.textPrimary}
+                      color={colors.bgSurface}
                     />
                   </Pressable>
                   {optionsOpen && (
@@ -190,7 +190,7 @@ export function MediaPager({
                     <FontAwesomeFreeSolid
                       name="sliders"
                       size={22}
-                      color={colors.textPrimary}
+                      color={colors.textOnAccent}
                     />
                   </Pressable>
                   {optionsOpen && (
@@ -263,6 +263,43 @@ export function MediaPager({
           </Pressable>
         </View>
       </Modal>
+
+      {/* Delete confirmation */}
+      <Modal
+        visible={confirmDeleteId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setConfirmDeleteId(null)}
+      >
+        <Pressable style={s.confirmBackdrop} onPress={() => setConfirmDeleteId(null)}>
+          <Pressable style={s.confirmCard} onPress={() => {}}>
+            <View style={s.confirmIconWrap}>
+              <FontAwesomeFreeSolid name="trash" size={20} color={colors.error} />
+            </View>
+            <Text style={s.confirmTitle}>Delete media?</Text>
+            <Text style={s.confirmBody}>
+              This photo or video will be permanently removed from this entry.
+            </Text>
+            <View style={s.confirmBtns}>
+              <Pressable
+                style={[s.confirmBtn, s.confirmBtnCancel]}
+                onPress={() => setConfirmDeleteId(null)}
+              >
+                <Text style={s.confirmBtnCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[s.confirmBtn, s.confirmBtnDelete]}
+                onPress={() => {
+                  if (confirmDeleteId !== null) onDelete(confirmDeleteId);
+                  setConfirmDeleteId(null);
+                }}
+              >
+                <Text style={s.confirmBtnDeleteText}>Delete</Text>
+              </Pressable>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -292,34 +329,39 @@ const s = StyleSheet.create({
   },
   actionsBar: {
     position: "absolute",
-    bottom: 0,
+    bottom: 14,
     left: 0,
     right: 0,
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.65)",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
   },
-  reorderBtn: {
+  actionsPill: {
     flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.bgSurface,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  actionReorder: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
-    paddingHorizontal: 14,
-    width: "auto",
+    paddingHorizontal: 18,
+    paddingVertical: 11,
   },
   reorderBtnText: {
     fontSize: 13,
     fontWeight: "500",
     color: colors.textPrimary,
   },
-  actionBtn: {
-    height: 36,
-    width: 36,
-    borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.12)",
+  actionDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: colors.border,
+  },
+  actionDelete: {
+    paddingHorizontal: 18,
+    paddingVertical: 11,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -365,5 +407,76 @@ const s = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "center",
     alignItems: "center",
+  },
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(63,52,40,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 32,
+  },
+  confirmCard: {
+    width: "100%",
+    backgroundColor: colors.bgSurface,
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  confirmTitle: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: colors.textPrimary,
+    marginBottom: 8,
+  },
+  confirmBody: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 24,
+  },
+  confirmBtns: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+  confirmBtnCancel: {
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  confirmBtnCancelText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: colors.textPrimary,
+  },
+  confirmBtnDelete: {
+    backgroundColor: colors.error,
+  },
+  confirmBtnDeleteText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#fff",
   },
 });
