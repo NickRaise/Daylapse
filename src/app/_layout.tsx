@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import "../global.css";
 import { Caveat_400Regular, useFonts } from "@expo-google-fonts/caveat";
 import { migrateDb } from "@/db";
+import useSettingsStore from "@/store/settings.store";
 import { useEffect, useState } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -17,7 +18,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     const init = async () => {
-      await migrateDb();
+      await Promise.all([migrateDb(), useSettingsStore.getState().hydrate()]);
       setReady(true);
     };
 

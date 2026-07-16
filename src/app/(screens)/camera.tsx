@@ -12,6 +12,7 @@ import { CameraControls } from "../../components/camera/CameraControls";
 import { CameraPreview } from "../../components/camera/CameraPreview";
 import useMediaStore from "@/store/media.store";
 import useEntryStore from "@/store/entry.store";
+import useSettingsStore from "@/store/settings.store";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
 import { useMediaPermissions } from "@/hooks/useMediaPermissions";
@@ -28,6 +29,7 @@ export default function Camera() {
     (state) => state.setRecentlySavedMediaURI,
   );
   const currentEntryId = useEntryStore((state) => state.currentId);
+  const saveToGallery = useSettingsStore((state) => state.saveToGallery);
 
   const [facing, setFacing] = useState<CameraType>("back");
   const [mode, setMode] = useState<CameraMode>("picture"); // UI toggle
@@ -120,7 +122,7 @@ export default function Camera() {
     if (!preview) return;
     try {
       const localUri = await mediaService.copyMedia(preview.uri);
-      await MediaLibrary.createAssetAsync(preview.uri);
+      if (saveToGallery) await MediaLibrary.createAssetAsync(preview.uri);
 
       if (currentEntryId !== null) {
         const existingMedia = await MediaRepository.getMediaByEntry(currentEntryId);
