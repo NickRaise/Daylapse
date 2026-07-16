@@ -1,26 +1,21 @@
 import { colors, spacing } from "@/theme";
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { useEffect, useMemo } from "react";
 import { parseDateKey } from "@/components/calendar/utils";
-import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
 import { JournalEditor } from "@/components/journal/JournalEditor";
 import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
 import useEntryStore from "@/store/entry.store";
-import { MediaRepository } from "@/repositories/media.repository";
-import type { Media } from "@/db/schema";
 import { AddMemoryCard } from "@/components/day/AddMemoryCard";
 import { AddMediaFab } from "@/components/day/AddMediaFab";
 import { MediaPager } from "@/components/day/MediaPager";
 import { ReorderModal } from "@/components/day/ReorderModal";
+import { DayHeader } from "@/components/day/DayHeader";
+import { DayJournalRow } from "@/components/day/DayJournalRow";
+import { useEntryMedia } from "@/hooks/useEntryMedia";
+import { useJournalEditor } from "@/hooks/useJournalEditor";
 
 const H_PAD = 20;
 
@@ -37,10 +32,10 @@ export default function DayScreen() {
   const updateMood = useEntryStore((s) => s.updateMood);
   const saveJournal = useEntryStore((s) => s.saveJournal);
 
-  const [editingText, setEditingText] = useState("");
-  const [journalOpen, setJournalOpen] = useState(false);
-  const [mediaFiles, setMediaFiles] = useState<Media[]>([]);
-  const [reorderVisible, setReorderVisible] = useState(false);
+  const { mediaFiles, reorderVisible, setReorderVisible, handleDeleteMedia, handleSaveOrder } =
+    useEntryMedia(currentId);
+  const { editingText, setEditingText, journalOpen, openJournal, closeJournal } =
+    useJournalEditor(currentJournalText, saveJournal);
 
   const quote = useMemo(
     () => quotes[Math.floor(Math.random() * quotes.length)],
@@ -51,50 +46,13 @@ export default function DayScreen() {
     createEntry(dateKey);
   }, [dateKey]);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (currentId !== null) {
-        MediaRepository.getMediaByEntry(currentId).then(setMediaFiles);
-      }
-    }, [currentId]),
-  );
-
   const handleOpenCamera = () => {
     router.push({ pathname: "/camera", params: { dateKey } });
   };
 
-  const handleDeleteMedia = async (id: number) => {
-    await MediaRepository.deleteMedia(id);
-    setMediaFiles((prev) => prev.filter((m) => m.id !== id));
-  };
-
-  const handleSaveOrder = async (newOrder: Media[]) => {
-    setReorderVisible(false);
-    setMediaFiles(newOrder);
-    await Promise.all(
-      newOrder.map((item, index) => MediaRepository.updateOrder(item.id, index)),
-    );
-  };
-
-  const handleJournalOpen = () => {
-    setEditingText(currentJournalText);
-    setJournalOpen(true);
-  };
-
-  const handleJournalClose = () => {
-    setJournalOpen(false);
-    saveJournal(editingText);
-  };
-
   return (
     <View style={styles.root}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.dateText}>{formattedDate}</Text>
-          <Text style={styles.dayText}>{dayName}</Text>
-        </View>
-      </View>
+      <DayHeader formattedDate={formattedDate} dayName={dayName} />
 
       {/* Quote */}
       <Text style={styles.quoteText}>"{quote}"</Text>
@@ -118,31 +76,11 @@ export default function DayScreen() {
         </View>
       )}
 
-      {/* Journal */}
-      <Pressable style={styles.journalRow} onPress={handleJournalOpen}>
-        {isLoading ? (
-          <ActivityIndicator size="small" color={colors.placeholderPrimary} />
-        ) : (
-          <Text
-            style={[
-              styles.journalText,
-              !!currentJournalText && styles.journalTextFilled,
-            ]}
-            numberOfLines={2}
-          >
-            {currentJournalText || "Tell today's story…"}
-          </Text>
-        )}
-        <FontAwesomeFreeSolid
-          name="edit"
-          size={16}
-          color={
-            currentJournalText
-              ? colors.textSecondary
-              : colors.placeholderPrimary
-          }
-        />
-      </Pressable>
+      <DayJournalRow
+        text={currentJournalText}
+        isLoading={isLoading}
+        onPress={openJournal}
+      />
 
       {/* Mood */}
       <View style={styles.moodWrap}>
@@ -166,7 +104,7 @@ export default function DayScreen() {
         visible={journalOpen}
         value={editingText}
         onChange={setEditingText}
-        onClose={handleJournalClose}
+        onClose={closeJournal}
         dateLabel={formattedDate}
       />
     </View>
@@ -179,27 +117,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     paddingTop: 44,
     paddingBottom: 24,
-  },
-
-  // ── Header ─────────────────────────────────────────────────────────────────
-  header: {
-    paddingHorizontal: H_PAD,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 6,
-  },
-  dateText: {
-    fontSize: 34,
-    fontWeight: "bold",
-    color: colors.textPrimary,
-    letterSpacing: -0.5,
-    lineHeight: 38,
-  },
-  dayText: {
-    fontFamily: "Caveat",
-    fontSize: 22,
-    color: colors.textSecondary,
   },
 
   // ── Quote ──────────────────────────────────────────────────────────────────
@@ -227,32 +144,6 @@ const styles = StyleSheet.create({
     height: 160,
   },
 
-  // ── Journal ────────────────────────────────────────────────────────────────
-  journalRow: {
-    marginHorizontal: H_PAD,
-    marginVertical: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.borderDark,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    backgroundColor: colors.bgSubtle,
-    minHeight: 48,
-  },
-  journalText: {
-    flex: 1,
-    color: colors.placeholderPrimary,
-    fontStyle: "italic",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  journalTextFilled: {
-    color: colors.textPrimary,
-    fontStyle: "normal",
-  },
 
   // ── Mood ───────────────────────────────────────────────────────────────────
   moodWrap: {
