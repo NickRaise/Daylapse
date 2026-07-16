@@ -2,7 +2,7 @@ import { CameraView, CameraType, CameraMode } from "expo-camera";
 // TODO (dev build): switch to "expo-media-library" (non-legacy) and replace createAssetAsync → Asset.create()
 import * as MediaLibrary from "expo-media-library/legacy";
 import * as ImagePicker from "expo-image-picker";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { colors } from "../../theme";
@@ -21,6 +21,8 @@ import { useCameraReady } from "@/hooks/useCameraReady";
 
 type Preview = { uri: string; type: "photo" | "video"; isLoading?: boolean };
 
+const PHOTO_QUALITY = { low: 0.5, medium: 0.75, high: 0.9 } as const;
+
 export default function Camera() {
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
@@ -30,6 +32,11 @@ export default function Camera() {
   );
   const currentEntryId = useEntryStore((state) => state.currentId);
   const saveToGallery = useSettingsStore((state) => state.saveToGallery);
+  const videoQuality = useSettingsStore((state) => state.videoQuality);
+  const useNativeCamera = useSettingsStore((state) => state.useNativeCamera);
+  const recordingTimeLimit = useSettingsStore((state) => state.recordingTimeLimit);
+
+  const nativeCameraLaunchedRef = useRef(false);
 
   const [facing, setFacing] = useState<CameraType>("back");
   const [mode, setMode] = useState<CameraMode>("picture"); // UI toggle
@@ -43,6 +50,20 @@ export default function Camera() {
   const { duration: recordingDuration, startTimer, stopTimer } = useRecordingTimer();
   const { waitForCameraReady, handleCameraReady } = useCameraReady();
 
+  useEffect(() => {
+    if (!granted || !useNativeCamera || nativeCameraLaunchedRef.current) return;
+    nativeCameraLaunchedRef.current = true;
+    ImagePicker.launchCameraAsync({
+      mediaTypes: ["images", "videos"],
+      quality: PHOTO_QUALITY[videoQuality],
+      videoMaxDuration: recordingTimeLimit ?? 300,
+    }).then((result) => {
+      if (result.canceled) { router.back(); return; }
+      const asset = result.assets[0];
+      if (asset) setPreview({ uri: asset.uri, type: asset.type === "video" ? "video" : "photo" });
+    });
+  }, [granted, useNativeCamera]);
+
   if (loading) return <View style={s.root} />;
   if (!granted) return <CameraPermission onRequest={request} />;
 
@@ -54,7 +75,7 @@ export default function Camera() {
     if (mode === "picture") {
       setIsBusy(true);
       try {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.9 });
+        const photo = await cameraRef.current.takePictureAsync({ quality: PHOTO_QUALITY[videoQuality] });
         setPreview({ uri: photo.uri, type: "photo" });
       } finally {
         setIsBusy(false);
@@ -73,7 +94,7 @@ export default function Camera() {
     setIsRecording(true);
     startTimer();
     try {
-      const result = await cameraRef.current.recordAsync();
+      const result = await cameraRef.current.recordAsync(recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined);
       setPreview(result?.uri ? { uri: result.uri, type: "video", isLoading: false } : null);
     } catch {
       setPreview(null);
@@ -93,7 +114,7 @@ export default function Camera() {
     await waitForCameraReady();
     startTimer();
     try {
-      const result = await cameraRef.current.recordAsync();
+      const result = await cameraRef.current.recordAsync(recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined);
       setPreview(result?.uri ? { uri: result.uri, type: "video", isLoading: false } : null);
     } catch {
       setPreview(null);
@@ -149,8 +170,8 @@ export default function Camera() {
   async function handleNativeCamera() {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: mode === "picture" ? ["images"] : ["videos"],
-      quality: 1,
-      videoMaxDuration: 300,
+      quality: PHOTO_QUALITY[videoQuality],
+      videoMaxDuration: recordingTimeLimit ?? 300,
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
