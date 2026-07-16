@@ -20,6 +20,7 @@ type MonthViewProps = {
   today: string;
   todayTimestamp: number;
   entries: Record<string, boolean>;
+  thumbnails: Record<string, string>;
   onDayPress: (dateKey: string) => void;
   onDayLongPress: (dateKey: string) => void;
 };
@@ -29,6 +30,7 @@ const MonthView = memo(function MonthView({
   today,
   todayTimestamp,
   entries,
+  thumbnails,
   onDayPress,
   onDayLongPress,
 }: MonthViewProps) {
@@ -59,6 +61,7 @@ const MonthView = memo(function MonthView({
                   isToday={dateKey === today}
                   isFuture={cellTs > todayTimestamp}
                   hasEntry={!!entries[dateKey]}
+                  thumbnailUri={thumbnails[dateKey]}
                   onPress={onDayPress}
                   onLongPress={onDayLongPress}
                 />

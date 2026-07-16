@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { Text, Pressable, StyleSheet } from "react-native";
+import { Text, Pressable, StyleSheet, ImageBackground, View } from "react-native";
 import { CELL_SIZE } from "./layout";
 import { colors, radius } from "../../theme";
 
@@ -10,6 +10,7 @@ type DayCellProps = {
   isToday: boolean;
   isFuture: boolean;
   hasEntry: boolean;
+  thumbnailUri?: string;
   onPress: (dateKey: string) => void;
   onLongPress: (dateKey: string) => void;
 };
@@ -21,19 +22,46 @@ const DayCell = memo(function DayCell({
   isToday,
   isFuture,
   hasEntry,
+  thumbnailUri,
   onPress,
   onLongPress,
 }: DayCellProps) {
+  const hasThumbnail = !!thumbnailUri && !isFuture && !isToday;
+
+  const cellStyle = [
+    styles.cell,
+    isToday
+      ? styles.todayCell
+      : isFuture
+        ? styles.futureCell
+        : styles.pastCell,
+  ];
+
+  if (hasThumbnail) {
+    return (
+      <Pressable
+        style={cellStyle}
+        onPress={() => onPress(dateKey)}
+        onLongPress={() => onLongPress(dateKey)}
+        android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
+      >
+        <ImageBackground
+          source={{ uri: thumbnailUri }}
+          style={styles.thumbBg}
+          resizeMode="cover"
+        >
+          <View style={styles.sketchLabel}>
+            <Text style={styles.sketchNum}>{day}</Text>
+            <Text style={styles.sketchWeekday}>{weekdayAbbr}</Text>
+          </View>
+        </ImageBackground>
+      </Pressable>
+    );
+  }
+
   return (
     <Pressable
-      style={[
-        styles.cell,
-        isToday
-          ? styles.todayCell
-          : isFuture
-            ? styles.futureCell
-            : styles.pastCell,
-      ]}
+      style={cellStyle}
       onPress={() => onPress(dateKey)}
       onLongPress={() => onLongPress(dateKey)}
       android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
@@ -76,11 +104,13 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
   },
   pastCell: { backgroundColor: colors.bgSurface },
   todayCell: { backgroundColor: colors.primary },
   futureCell: { backgroundColor: colors.bgSubtle },
 
+  // ── Plain cell text ───────────────────────────────────────────────────────
   dayNum: {
     fontSize: CELL_SIZE * 0.24,
     fontWeight: "700",
@@ -106,6 +136,42 @@ const styles = StyleSheet.create({
     bottom: CELL_SIZE * 0.1,
     fontSize: CELL_SIZE * 0.13,
     color: colors.bgElevated,
+  },
+
+  // ── Thumbnail cell ────────────────────────────────────────────────────────
+  thumbBg: {
+    width: CELL_SIZE,
+    height: CELL_SIZE,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: CELL_SIZE * 0.1,
+  },
+  sketchLabel: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+    backgroundColor: "rgba(254, 250, 224, 0.92)",
+    paddingHorizontal: CELL_SIZE * 0.11,
+    paddingVertical: CELL_SIZE * 0.05,
+    // Asymmetric radii for an organic hand-drawn blob feel
+    borderTopLeftRadius: CELL_SIZE * 0.28,
+    borderTopRightRadius: CELL_SIZE * 0.18,
+    borderBottomLeftRadius: CELL_SIZE * 0.15,
+    borderBottomRightRadius: CELL_SIZE * 0.26,
+    transform: [{ rotate: "-1.5deg" }],
+  },
+  sketchNum: {
+    fontSize: CELL_SIZE * 0.22,
+    fontWeight: "700",
+    color: colors.textPrimary,
+    letterSpacing: -0.5,
+  },
+  sketchWeekday: {
+    fontSize: CELL_SIZE * 0.1,
+    fontWeight: "600",
+    color: colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 });
 

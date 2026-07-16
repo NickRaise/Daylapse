@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useEffect } from "react";
+import { useRef, useMemo, useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { FlatList, View, StyleSheet, LayoutChangeEvent } from "react-native";
 import MonthView from "../../../components/calendar/MonthView";
@@ -18,6 +18,7 @@ import {
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 import useEntryStore from "@/store/entry.store";
+import { MediaRepository } from "@/repositories/media.repository";
 
 const PAST_MONTHS = 60; // ~5 years back
 const FUTURE_MONTHS = 3; // 3 months ahead
@@ -40,6 +41,8 @@ export default function CalendarScreen() {
 
   const entriesCache = useEntryStore((s) => s.entriesCache);
   const loadEntriesCache = useEntryStore((s) => s.loadEntriesCache);
+
+  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
 
   // Compute the date range for the full visible calendar span once
   const { startDate, endDate } = useMemo(() => {
@@ -109,11 +112,12 @@ export default function CalendarScreen() {
     [scrollToToday],
   );
 
-  // Jump back to today on every tab focus.
+  // Jump back to today and refresh thumbnails on every tab focus.
   useFocusEffect(
     useCallback(() => {
       scrollToToday();
-    }, [scrollToToday]),
+      MediaRepository.getFirstMediaByDateRange(startDate, endDate).then(setThumbnails);
+    }, [scrollToToday, startDate, endDate]),
   );
 
   const handleDayPress = useCallback(
@@ -134,11 +138,12 @@ export default function CalendarScreen() {
         today={today}
         todayTimestamp={todayTimestamp}
         entries={entries}
+        thumbnails={thumbnails}
         onDayPress={handleDayPress}
         onDayLongPress={handleDayLongPress}
       />
     ),
-    [today, todayTimestamp, entries, handleDayPress, handleDayLongPress],
+    [today, todayTimestamp, entries, thumbnails, handleDayPress, handleDayLongPress],
   );
 
   const keyExtractor = useCallback((item: MonthData) => item.key, []);

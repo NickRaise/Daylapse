@@ -1,7 +1,7 @@
 import { db } from "@/db";
 import { IMedia } from "@/types";
-import { Media, media } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { Media, media, entries } from "@/db/schema";
+import { and, eq, gte, lte } from "drizzle-orm";
 
 export class MediaRepository {
   static async addMedia(data: IMedia): Promise<number | null> {
@@ -71,6 +71,28 @@ export class MediaRepository {
     } catch (error) {
       console.error("Error deleting media:", error);
       return false;
+    }
+  }
+
+  static async getFirstMediaByDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<Record<string, string>> {
+    try {
+      const rows = await db
+        .select({ date: entries.date, uri: media.uri })
+        .from(entries)
+        .innerJoin(
+          media,
+          and(eq(media.entryId, entries.id), eq(media.order, 0)),
+        )
+        .where(and(gte(entries.date, startDate), lte(entries.date, endDate)));
+      const result: Record<string, string> = {};
+      for (const row of rows) result[row.date] = row.uri;
+      return result;
+    } catch (error) {
+      console.error("[media] getFirstMediaByDateRange failed:", error);
+      return {};
     }
   }
 
