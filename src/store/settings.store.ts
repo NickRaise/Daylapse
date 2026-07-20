@@ -1,15 +1,23 @@
 import { create } from "zustand";
 import { File, Paths } from "expo-file-system";
+import type { AspectRatio, DateStampFormat, DateStampPosition } from "@/types";
 
 const settingsFile = new File(Paths.document, "app-settings.json");
 
 export type VideoQuality = "low" | "medium" | "high";
 
 type Settings = {
+  // Camera
   saveToGallery: boolean;
   videoQuality: VideoQuality;
   useNativeCamera: boolean;
   recordingTimeLimit: number | null;
+  // Editor frame
+  defaultAspectRatio: AspectRatio;
+  // Editor date stamp prefs (auto-saved by editor, not in settings UI)
+  lastDateStampEnabled: boolean;
+  lastDateStampPosition: DateStampPosition;
+  lastDateStampFormat: DateStampFormat;
 };
 
 type SettingsState = Settings & {
@@ -19,6 +27,12 @@ type SettingsState = Settings & {
   setVideoQuality: (value: VideoQuality) => Promise<void>;
   setUseNativeCamera: (value: boolean) => Promise<void>;
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
+  setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
+  setLastDateStampPrefs: (prefs: {
+    enabled: boolean;
+    position: DateStampPosition;
+    format: DateStampFormat;
+  }) => Promise<void>;
 };
 
 const DEFAULTS: Settings = {
@@ -26,6 +40,10 @@ const DEFAULTS: Settings = {
   videoQuality: "high",
   useNativeCamera: false,
   recordingTimeLimit: null,
+  defaultAspectRatio: "4:3",
+  lastDateStampEnabled: false,
+  lastDateStampPosition: "bottom-right",
+  lastDateStampFormat: "DD MMM YYYY",
 };
 
 async function readFile(): Promise<Settings> {
@@ -48,6 +66,10 @@ function pickSettings(state: SettingsState): Settings {
     videoQuality: state.videoQuality,
     useNativeCamera: state.useNativeCamera,
     recordingTimeLimit: state.recordingTimeLimit,
+    defaultAspectRatio: state.defaultAspectRatio,
+    lastDateStampEnabled: state.lastDateStampEnabled,
+    lastDateStampPosition: state.lastDateStampPosition,
+    lastDateStampFormat: state.lastDateStampFormat,
   };
 }
 
@@ -78,6 +100,25 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
   setRecordingTimeLimit: async (value) => {
     set({ recordingTimeLimit: value });
     writeFile({ ...pickSettings(get()), recordingTimeLimit: value });
+  },
+
+  setDefaultAspectRatio: async (value) => {
+    set({ defaultAspectRatio: value });
+    writeFile({ ...pickSettings(get()), defaultAspectRatio: value });
+  },
+
+  setLastDateStampPrefs: async ({ enabled, position, format }) => {
+    set({
+      lastDateStampEnabled: enabled,
+      lastDateStampPosition: position,
+      lastDateStampFormat: format,
+    });
+    writeFile({
+      ...pickSettings(get()),
+      lastDateStampEnabled: enabled,
+      lastDateStampPosition: position,
+      lastDateStampFormat: format,
+    });
   },
 }));
 

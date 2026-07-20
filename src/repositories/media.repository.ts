@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { IMedia } from "@/types";
+import type { IMedia } from "@/types";
 import { Media, media, entries } from "@/db/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 

@@ -1,11 +1,18 @@
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { colors, spacing } from "@/theme";
 import useSettingsStore, { VideoQuality } from "@/store/settings.store";
+import type { AspectRatio } from "@/types";
 
 const QUALITY_OPTIONS: { label: string; value: VideoQuality }[] = [
   { label: "Low", value: "low" },
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" },
+];
+
+const ASPECT_RATIO_OPTIONS: { label: string; value: AspectRatio; desc: string }[] = [
+  { label: "4:3", value: "4:3", desc: "Standard wide" },
+  { label: "1:1", value: "1:1", desc: "Square" },
+  { label: "9:16", value: "9:16", desc: "Tall portrait" },
 ];
 
 const TIME_LIMIT_OPTIONS: { label: string; value: number | null }[] = [
@@ -26,6 +33,8 @@ export default function Settings() {
   const setUseNativeCamera = useSettingsStore((s) => s.setUseNativeCamera);
   const recordingTimeLimit = useSettingsStore((s) => s.recordingTimeLimit);
   const setRecordingTimeLimit = useSettingsStore((s) => s.setRecordingTimeLimit);
+  const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
+  const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -82,6 +91,32 @@ export default function Settings() {
               >
                 <Text style={[s.pillText, recordingTimeLimit === value && s.pillTextActive]}>
                   {label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </View>
+
+      <Text style={s.sectionLabel}>Editor</Text>
+      <View style={s.section}>
+        <View style={s.settingBlock}>
+          <Text style={s.rowTitle}>Default frame ratio</Text>
+          <Text style={s.rowDesc}>
+            Starting aspect ratio when the editor opens. You can flip between portrait and landscape per capture.
+          </Text>
+          <View style={s.pills}>
+            {ASPECT_RATIO_OPTIONS.map(({ label, value, desc }) => (
+              <Pressable
+                key={value}
+                style={[s.pill, defaultAspectRatio === value && s.pillActive]}
+                onPress={() => setDefaultAspectRatio(value)}
+              >
+                <Text style={[s.pillText, defaultAspectRatio === value && s.pillTextActive]}>
+                  {label}
+                </Text>
+                <Text style={[s.pillDesc, defaultAspectRatio === value && s.pillDescActive]}>
+                  {desc}
                 </Text>
               </Pressable>
             ))}
@@ -187,6 +222,7 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.bg,
+    alignItems: "center",
   },
   pillActive: {
     backgroundColor: colors.primary,
@@ -200,6 +236,14 @@ const s = StyleSheet.create({
   pillTextActive: {
     color: colors.textOnAccent,
     fontWeight: "600",
+  },
+  pillDesc: {
+    fontSize: 10,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  pillDescActive: {
+    color: "rgba(255,255,255,0.75)",
   },
   note: {
     marginTop: 10,
