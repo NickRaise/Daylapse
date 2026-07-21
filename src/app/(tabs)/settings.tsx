@@ -35,6 +35,8 @@ export default function Settings() {
   const setRecordingTimeLimit = useSettingsStore((s) => s.setRecordingTimeLimit);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
+  const keepOriginalPhoto = useSettingsStore((s) => s.keepOriginalPhoto);
+  const setKeepOriginalPhoto = useSettingsStore((s) => s.setKeepOriginalPhoto);
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -140,7 +142,29 @@ export default function Settings() {
             thumbColor={colors.bgSurface}
           />
         </View>
-        <Text style={s.note}>Turning this on will use more storage space on your device.</Text>
+
+        <View style={s.divider} />
+
+        <View style={s.row}>
+          <View style={s.rowText}>
+            <Text style={s.rowTitle}>Keep original for re-editing</Text>
+            <Text style={s.rowDesc}>
+              Saves the unedited photo so overlays can be changed later. Turn off to burn
+              edits into the photo permanently and save only that version.
+            </Text>
+          </View>
+          <Switch
+            value={keepOriginalPhoto}
+            onValueChange={setKeepOriginalPhoto}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.bgSurface}
+          />
+        </View>
+        <Text style={s.note}>
+          {keepOriginalPhoto
+            ? "Original photo is saved — overlays can be changed on re-edit."
+            : "Only the edited photo is saved — uses less storage."}
+        </Text>
       </View>
     </ScrollView>
   );

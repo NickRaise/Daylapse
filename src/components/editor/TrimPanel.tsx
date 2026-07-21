@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -6,200 +6,363 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { Image } from "expo-image";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from "react-native-reanimated";
+import * as VideoThumbnails from "expo-video-thumbnails";
+import type { VideoPlayer } from "expo-video";
+import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
+import { colors, fontSize, spacing } from "@/theme";
 
 export type TrimRange = { start: number; end: number };
 
-type Props = {
-  duration: number; // total video duration in seconds
-  range: TrimRange;
-  onRangeChange: (range: TrimRange) => void;
-};
+const STRIP_H = 64;
+const THUMB_COUNT = 10;
+const STEP_S = 1; // back/next step in seconds
 
-const PRESETS = [
-  { label: "Full", value: null },
-  { label: "1s", value: 1 },
-  { label: "3s", value: 3 },
-  { label: "5s", value: 5 },
-  { label: "10s", value: 10 },
-];
+const PRESET_DURATIONS = [1, 3, 5, 10] as const;
 
-const THUMB = 22;
-const RAIL_H = 5;
-const HIT = 36;
-
-function formatTime(s: number): string {
+function fmt(s: number): string {
   const m = Math.floor(s / 60);
-  const sec = Math.floor(s % 60);
-  return `${m}:${sec.toString().padStart(2, "0")}`;
+  const sec = s % 60;
+  return `${m}:${sec.toFixed(1).padStart(4, "0")}`;
 }
 
-export function TrimPanel({ duration, range, onRangeChange }: Props) {
+type Props = {
+  videoUri: string;
+  player: VideoPlayer;
+  duration: number;
+  onRangeChange: (r: TrimRange) => void;
+  playhead: number;
+  onSeek: (time: number) => void;
+};
+
+export function TrimPanel({
+  videoUri,
+  player,
+  duration,
+  onRangeChange,
+  playhead,
+  onSeek,
+}: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
-  const trackOriginX = useRef(0);
-  const [customSec, setCustomSec] = useState("");
-  const [activePreset, setActivePreset] = useState<number | null | "custom">(null);
+  const [thumbUris, setThumbUris] = useState<string[]>([]);
+  const [isPlaying, setIsPlaying] = useState(player.playing);
+  const [clipDuration, setClipDuration] = useState(3);
+  const [customText, setCustomText] = useState("");
+  const [isCustom, setIsCustom] = useState(false);
 
-  const safeEnd = range.end > 0 ? range.end : duration;
-  const startRatio = duration > 0 ? range.start / duration : 0;
-  const endRatio = duration > 0 ? safeEnd / duration : 1;
+  const generatingRef = useRef(false);
+  // Blocks the auto-follow useEffect while a drag gesture is active
+  const isDragging = useRef(false);
+  // JS-side position tracking (avoids reading shared value from JS thread)
+  const clipStartRef = useRef(0);
 
-  function applyPreset(secs: number | null) {
-    if (secs === null) {
-      onRangeChange({ start: 0, end: duration });
-    } else {
-      const clippedEnd = Math.min(range.start + secs, duration);
-      onRangeChange({ start: range.start, end: clippedEnd });
-    }
-    setActivePreset(secs);
-    setCustomSec("");
+  const dur = Math.max(duration, 0.001);
+  const safeClipDur = Math.min(clipDuration, dur);
+  const maxStart = Math.max(0, dur - safeClipDur);
+
+  // ── Shared values ─────────────────────────────────────────────────────────
+  const trackW = useSharedValue(0);
+  const durSV = useSharedValue(dur);
+  const blockX = useSharedValue(0); // left edge of block in px
+  const blockW = useSharedValue(0); // width of block in px
+  const blockSaved = useSharedValue(0);
+
+  useEffect(() => { durSV.value = dur; }, [dur]);
+
+  // Recompute block width whenever clip duration or track width changes
+  useEffect(() => {
+    if (trackWidth <= 0 || !duration) return;
+    blockW.value = (safeClipDur / dur) * trackWidth;
+    // Also re-clamp position so block doesn't overflow
+    const maxX = Math.max(0, trackWidth - blockW.value);
+    if (blockX.value > maxX) blockX.value = withTiming(maxX);
+  }, [safeClipDur, duration, trackWidth]);
+
+  // Auto-follow playhead (both while playing and after seeks)
+  useEffect(() => {
+    if (isDragging.current || trackWidth <= 0 || !duration) return;
+    const startT = Math.min(playhead, maxStart);
+    clipStartRef.current = startT;
+    blockX.value = withTiming((startT / dur) * trackWidth, { duration: 50 });
+    onRangeChange({ start: startT, end: Math.min(startT + safeClipDur, dur) });
+  }, [playhead, trackWidth, duration, safeClipDur]);
+
+  // Track playing state
+  useEffect(() => {
+    setIsPlaying(player.playing);
+    const sub = player.addListener("playingChange", ({ isPlaying: p }) =>
+      setIsPlaying(p),
+    );
+    return () => sub.remove();
+  }, [player]);
+
+  // ── Thumbnail generation ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (trackWidth < 10 || !duration || !videoUri || generatingRef.current) return;
+    generatingRef.current = true;
+    const times = Array.from({ length: THUMB_COUNT }, (_, i) =>
+      Math.round((i / (THUMB_COUNT - 1)) * duration * 1000),
+    );
+    Promise.all(
+      times.map((t) =>
+        VideoThumbnails.getThumbnailAsync(videoUri, { time: t, quality: 0.4 })
+          .then((r) => r.uri)
+          .catch(() => ""),
+      ),
+    ).then((uris) => {
+      setThumbUris(uris.filter(Boolean));
+      generatingRef.current = false;
+    });
+  }, [trackWidth, duration, videoUri]);
+
+  // ── Clip duration helpers ─────────────────────────────────────────────────
+  function applyClipDuration(seconds: number) {
+    const clamped = Math.max(0.5, Math.min(seconds, dur));
+    setClipDuration(clamped);
+    // Recompute range with current position
+    const startT = clipStartRef.current;
+    const clampedStart = Math.min(startT, Math.max(0, dur - clamped));
+    clipStartRef.current = clampedStart;
+    blockX.value = withTiming((clampedStart / dur) * trackWidth);
+    onRangeChange({ start: clampedStart, end: Math.min(clampedStart + clamped, dur) });
   }
 
-  function applyCustom() {
-    const val = parseFloat(customSec);
-    if (isNaN(val) || val <= 0) return;
-    const clippedEnd = Math.min(range.start + val, duration);
-    onRangeChange({ start: range.start, end: clippedEnd });
-    setActivePreset("custom");
+  function handleCustomSubmit() {
+    const v = parseFloat(customText);
+    if (!isNaN(v) && v > 0) applyClipDuration(v);
   }
 
-  function clampRatio(x: number) {
-    return Math.max(0, Math.min(1, x / (trackWidth || 1)));
+  // ── Back / Next ───────────────────────────────────────────────────────────
+  function stepBlock(delta: number) {
+    if (player.playing) player.pause();
+    const newStart = Math.max(0, Math.min(maxStart, clipStartRef.current + delta));
+    clipStartRef.current = newStart;
+    blockX.value = withTiming((newStart / dur) * trackWidth, { duration: 80 });
+    player.currentTime = newStart;
+    onSeek(newStart);
+    onRangeChange({ start: newStart, end: Math.min(newStart + safeClipDur, dur) });
   }
 
-  const startLeft = startRatio * trackWidth - THUMB / 2;
-  const endLeft = endRatio * trackWidth - THUMB / 2;
+  // ── Drag gesture (block is draggable only when video is paused) ───────────
+  function beginDrag() {
+    isDragging.current = true;
+    if (player.playing) player.pause();
+  }
+
+  function endDrag(rawT: number) {
+    const startT = Math.max(0, Math.min(maxStart, rawT));
+    clipStartRef.current = startT;
+    isDragging.current = false;
+    player.currentTime = startT;
+    onSeek(startT);
+    onRangeChange({ start: startT, end: Math.min(startT + safeClipDur, dur) });
+  }
+
+  const blockPan = Gesture.Pan()
+    .activeOffsetX([-2, 2])
+    .failOffsetY([-15, 15])
+    .onBegin(() => {
+      "worklet";
+      blockSaved.value = blockX.value;
+      runOnJS(beginDrag)();
+    })
+    .onUpdate((e) => {
+      "worklet";
+      const maxX = trackW.value - blockW.value;
+      blockX.value = Math.max(0, Math.min(maxX, blockSaved.value + e.translationX));
+    })
+    .onEnd(() => {
+      "worklet";
+      const t = (blockX.value / trackW.value) * durSV.value;
+      runOnJS(endDrag)(t);
+    });
+
+  // ── Animated styles ───────────────────────────────────────────────────────
+  const dimLeftStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, blockX.value),
+  }));
+  const dimRightStyle = useAnimatedStyle(() => ({
+    left: Math.min(blockX.value + blockW.value, trackW.value),
+  }));
+  const blockStyle = useAnimatedStyle(() => ({
+    left: blockX.value,
+    width: Math.max(0, blockW.value),
+  }));
+
+  const thumbW = trackWidth > 0 ? trackWidth / THUMB_COUNT : 0;
+  const clipEndDisplay = Math.min(clipStartRef.current + safeClipDur, dur);
 
   return (
     <View style={s.root}>
-      {/* Duration presets */}
-      <Text style={s.subLabel}>Duration</Text>
-      <View style={s.presets}>
-        {PRESETS.map(({ label, value }) => {
-          const isActive = activePreset === value;
+
+      {/* ── Clip duration selector ── */}
+      <View style={s.durationRow}>
+        <Text style={s.durationLabel}>Clip</Text>
+        {PRESET_DURATIONS.map((d) => {
+          const active = !isCustom && clipDuration === d;
           return (
             <Pressable
-              key={label}
-              style={[s.pill, isActive && s.pillActive]}
-              onPress={() => applyPreset(value)}
+              key={d}
+              style={[s.pill, active && s.pillActive]}
+              onPress={() => { setIsCustom(false); applyClipDuration(d); }}
             >
-              <Text style={[s.pillText, isActive && s.pillTextActive]}>{label}</Text>
+              <Text style={[s.pillText, active && s.pillTextActive]}>{d}s</Text>
             </Pressable>
           );
         })}
 
         {/* Custom input */}
-        <View style={[s.customWrap, activePreset === "custom" && s.pillActive]}>
-          <TextInput
-            style={[s.customInput, activePreset === "custom" && s.customInputActive]}
-            value={customSec}
-            onChangeText={setCustomSec}
-            placeholder="…s"
-            placeholderTextColor={colors.placeholderSecondary}
-            keyboardType="decimal-pad"
-            returnKeyType="done"
-            onSubmitEditing={applyCustom}
-            maxLength={5}
+        <Pressable
+          style={[s.pill, isCustom && s.pillActive]}
+          onPress={() => setIsCustom(true)}
+        >
+          {isCustom ? (
+            <TextInput
+              style={s.customInput}
+              value={customText}
+              onChangeText={setCustomText}
+              onSubmitEditing={handleCustomSubmit}
+              onBlur={handleCustomSubmit}
+              keyboardType="decimal-pad"
+              placeholder="s"
+              placeholderTextColor={colors.textMuted}
+              returnKeyType="done"
+              autoFocus
+              maxLength={5}
+            />
+          ) : (
+            <Text style={[s.pillText, isCustom && s.pillTextActive]}>Custom</Text>
+          )}
+        </Pressable>
+      </View>
+
+      {/* ── Playback controls ── */}
+      <View style={s.controls}>
+        <Pressable style={s.ctrlBtn} hitSlop={12} onPress={() => stepBlock(-STEP_S)}>
+          <FontAwesomeFreeSolid name="backward-step" size={14} color={colors.textSecondary} />
+        </Pressable>
+
+        <Pressable
+          style={[s.ctrlBtn, s.playBtn]}
+          hitSlop={8}
+          onPress={() => (isPlaying ? player.pause() : player.play())}
+        >
+          <FontAwesomeFreeSolid
+            name={isPlaying ? "pause" : "play"}
+            size={13}
+            color={colors.textPrimary}
           />
-        </View>
+        </Pressable>
+
+        <Pressable style={s.ctrlBtn} hitSlop={12} onPress={() => stepBlock(STEP_S)}>
+          <FontAwesomeFreeSolid name="forward-step" size={14} color={colors.textSecondary} />
+        </Pressable>
+
+        <Text style={s.timeDisplay}>
+          {fmt(playhead)}
+          <Text style={s.timeSep}> / </Text>
+          {fmt(duration)}
+        </Text>
       </View>
 
-      {/* Timeline */}
-      <Text style={s.subLabel}>Clip range</Text>
-      <View style={s.timeRow}>
-        <Text style={s.timeLabel}>{formatTime(range.start)}</Text>
-        <Text style={s.timeLabel}>{formatTime(safeEnd)}</Text>
-      </View>
-
+      {/* ── Timeline ── */}
       <View
-        style={s.trackHitArea}
+        style={s.timelineContainer}
         onLayout={(e) => {
-          setTrackWidth(e.nativeEvent.layout.width);
+          const w = e.nativeEvent.layout.width;
+          setTrackWidth(w);
+          trackW.value = w;
         }}
       >
-        {/* Rail */}
-        <View style={s.rail} />
-        {/* Selected range fill */}
-        <View
-          style={[
-            s.fill,
-            {
-              left: startRatio * trackWidth,
-              width: Math.max(0, (endRatio - startRatio) * trackWidth),
-            },
-          ]}
-        />
-
-        {/* Start handle */}
-        {trackWidth > 0 && (
-          <View
-            style={[s.thumbHit, { left: startLeft + THUMB / 2 - HIT / 2 }]}
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-            onResponderGrant={(e) => {
-              trackOriginX.current = e.nativeEvent.pageX - e.nativeEvent.locationX - (startLeft + THUMB / 2 - HIT / 2);
-            }}
-            onResponderMove={(e) => {
-              const ratio = clampRatio(e.nativeEvent.pageX - trackOriginX.current);
-              const newStart = Math.min(ratio * duration, safeEnd - 0.5);
-              onRangeChange({ start: newStart, end: safeEnd });
-            }}
-          >
-            <View style={[s.thumb, s.thumbStart]} />
+        {/* Thumbnail strip — overflow:hidden, pointerEvents none so overlay gets touches */}
+        <View style={s.strip} pointerEvents="none">
+          <View style={s.thumbRow}>
+            {thumbUris.length > 0
+              ? thumbUris.map((uri, i) => (
+                  <Image
+                    key={i}
+                    source={{ uri }}
+                    style={{ width: thumbW, height: STRIP_H }}
+                    contentFit="cover"
+                  />
+                ))
+              : Array.from({ length: THUMB_COUNT }).map((_, i) => (
+                  <View key={i} style={[s.thumbPlaceholder, { width: thumbW }]} />
+                ))}
           </View>
-        )}
 
-        {/* End handle */}
+          {/* Dim outside the selected clip */}
+          <Animated.View style={[s.dim, s.dimLeft, dimLeftStyle]} />
+          <Animated.View style={[s.dim, s.dimRight, dimRightStyle]} />
+        </View>
+
+        {/* Interactive overlay — no overflow:hidden */}
         {trackWidth > 0 && (
-          <View
-            style={[s.thumbHit, { left: endLeft + THUMB / 2 - HIT / 2 }]}
-            onStartShouldSetResponder={() => true}
-            onMoveShouldSetResponder={() => true}
-            onResponderGrant={(e) => {
-              trackOriginX.current = e.nativeEvent.pageX - e.nativeEvent.locationX - (endLeft + THUMB / 2 - HIT / 2);
-            }}
-            onResponderMove={(e) => {
-              const ratio = clampRatio(e.nativeEvent.pageX - trackOriginX.current);
-              const newEnd = Math.max(ratio * duration, range.start + 0.5);
-              onRangeChange({ start: range.start, end: newEnd });
-            }}
-          >
-            <View style={[s.thumb, s.thumbEnd]} />
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <GestureDetector gesture={blockPan}>
+              <Animated.View style={[s.block, blockStyle]}>
+                {/* Left bracket */}
+                <View style={[s.bracket, s.bracketLeft]} />
+                {/* Right bracket */}
+                <View style={[s.bracket, s.bracketRight]} />
+                {/* Top border */}
+                <View style={s.blockBorderTop} />
+                {/* Bottom border */}
+                <View style={s.blockBorderBottom} />
+              </Animated.View>
+            </GestureDetector>
           </View>
         )}
       </View>
 
-      <Text style={s.hint}>
-        Drag handles to select the clip range. The selected portion plays on your day.
-      </Text>
+      {/* ── Time labels ── */}
+      <View style={s.timeRow}>
+        <Text style={s.timeLabel}>{fmt(clipStartRef.current)}</Text>
+        <Text style={s.clipDurLabel}>{safeClipDur.toFixed(1)}s</Text>
+        <Text style={s.timeLabel}>{fmt(clipEndDisplay)}</Text>
+      </View>
+
     </View>
   );
 }
 
+const BRACKET_W = 8;
+const BORDER_H = 3;
+
 const s = StyleSheet.create({
-  root: {
-    gap: spacing[3],
+  root: { gap: spacing[3] },
+
+  // Duration selector
+  durationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+    flexWrap: "wrap",
   },
-  subLabel: {
+  durationLabel: {
     fontSize: fontSize.xs,
     fontWeight: "600",
     color: colors.textMuted,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
-  },
-  presets: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing[2],
-    alignItems: "center",
+    letterSpacing: 0.5,
+    marginRight: 2,
   },
   pill: {
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.bg,
+    backgroundColor: "transparent",
+    minWidth: 40,
+    alignItems: "center",
   },
   pillActive: {
     backgroundColor: colors.primary,
@@ -214,81 +377,125 @@ const s = StyleSheet.create({
     color: colors.textOnAccent,
     fontWeight: "600",
   },
-  customWrap: {
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.bg,
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    minWidth: 52,
-    alignItems: "center",
-  },
   customInput: {
     fontSize: fontSize.sm,
-    fontWeight: "500",
-    color: colors.textSecondary,
-    padding: 0,
-    minWidth: 32,
-    textAlign: "center",
-  },
-  customInputActive: {
+    fontWeight: "600",
     color: colors.textOnAccent,
+    minWidth: 40,
+    textAlign: "center",
+    padding: 0,
   },
+
+  // Controls
+  controls: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[2],
+  },
+  ctrlBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.bgSubtle,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  playBtn: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary + "22",
+  },
+  timeDisplay: {
+    flex: 1,
+    textAlign: "right",
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontVariant: ["tabular-nums"],
+  },
+  timeSep: { color: colors.textMuted },
+
+  // Timeline container — no overflow:hidden so block at edges gets touches
+  timelineContainer: {
+    height: STRIP_H,
+  },
+
+  // Strip — overflow:hidden for visual
+  strip: {
+    ...StyleSheet.absoluteFill,
+    borderRadius: 6,
+    overflow: "hidden",
+    backgroundColor: "#1a1a1a",
+  },
+  thumbRow: {
+    flexDirection: "row",
+    height: STRIP_H,
+  },
+  thumbPlaceholder: {
+    height: STRIP_H,
+    backgroundColor: "#2a2a2a",
+    borderRightWidth: 1,
+    borderRightColor: "#111",
+  },
+
+  // Dim overlays
+  dim: {
+    position: "absolute",
+    top: 0,
+    height: STRIP_H,
+    backgroundColor: "rgba(0,0,0,0.6)",
+  },
+  dimLeft: { left: 0 },
+  dimRight: { right: 0 },
+
+  // Draggable clip block
+  block: {
+    position: "absolute",
+    top: 0,
+    height: STRIP_H,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    overflow: "visible",
+  },
+  bracket: {
+    position: "absolute",
+    top: 0,
+    width: BRACKET_W,
+    height: STRIP_H,
+    backgroundColor: colors.primary,
+  },
+  bracketLeft: { left: 0, borderTopLeftRadius: 3, borderBottomLeftRadius: 3 },
+  bracketRight: { right: 0, borderTopRightRadius: 3, borderBottomRightRadius: 3 },
+  blockBorderTop: {
+    position: "absolute",
+    top: 0,
+    left: BRACKET_W,
+    right: BRACKET_W,
+    height: BORDER_H,
+    backgroundColor: colors.primary,
+  },
+  blockBorderBottom: {
+    position: "absolute",
+    bottom: 0,
+    left: BRACKET_W,
+    right: BRACKET_W,
+    height: BORDER_H,
+    backgroundColor: colors.primary,
+  },
+
+  // Time row
   timeRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
   },
   timeLabel: {
     fontSize: fontSize.xs,
     color: colors.textMuted,
     fontVariant: ["tabular-nums"],
   },
-  trackHitArea: {
-    height: HIT,
-    justifyContent: "center",
-    marginHorizontal: THUMB / 2,
-  },
-  rail: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    height: RAIL_H,
-    borderRadius: RAIL_H / 2,
-    backgroundColor: colors.border,
-  },
-  fill: {
-    position: "absolute",
-    height: RAIL_H,
-    borderRadius: RAIL_H / 2,
-    backgroundColor: colors.primary,
-  },
-  thumbHit: {
-    position: "absolute",
-    width: HIT,
-    height: HIT,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  thumb: {
-    width: THUMB,
-    height: THUMB,
-    borderRadius: THUMB / 2,
-    backgroundColor: "#fff",
-    borderWidth: 2,
-    borderColor: colors.primary,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
-    elevation: 4,
-  },
-  thumbStart: {},
-  thumbEnd: {},
-  hint: {
+  clipDurLabel: {
     fontSize: fontSize.xs,
-    color: colors.textMuted,
-    lineHeight: 16,
-    fontStyle: "italic",
+    fontWeight: "600",
+    color: colors.primary,
   },
 });

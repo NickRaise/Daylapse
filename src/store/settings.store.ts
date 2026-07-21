@@ -14,6 +14,8 @@ type Settings = {
   recordingTimeLimit: number | null;
   // Editor frame
   defaultAspectRatio: AspectRatio;
+  // Storage
+  keepOriginalPhoto: boolean;
   // Editor date stamp prefs (auto-saved by editor, not in settings UI)
   lastDateStampEnabled: boolean;
   lastDateStampPosition: DateStampPosition;
@@ -28,6 +30,7 @@ type SettingsState = Settings & {
   setUseNativeCamera: (value: boolean) => Promise<void>;
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
+  setKeepOriginalPhoto: (value: boolean) => Promise<void>;
   setLastDateStampPrefs: (prefs: {
     enabled: boolean;
     position: DateStampPosition;
@@ -41,6 +44,7 @@ const DEFAULTS: Settings = {
   useNativeCamera: false,
   recordingTimeLimit: null,
   defaultAspectRatio: "4:3",
+  keepOriginalPhoto: false,
   lastDateStampEnabled: false,
   lastDateStampPosition: "bottom-right",
   lastDateStampFormat: "DD MMM YYYY",
@@ -67,6 +71,7 @@ function pickSettings(state: SettingsState): Settings {
     useNativeCamera: state.useNativeCamera,
     recordingTimeLimit: state.recordingTimeLimit,
     defaultAspectRatio: state.defaultAspectRatio,
+    keepOriginalPhoto: state.keepOriginalPhoto,
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastDateStampPosition: state.lastDateStampPosition,
     lastDateStampFormat: state.lastDateStampFormat,
@@ -105,6 +110,11 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
   setDefaultAspectRatio: async (value) => {
     set({ defaultAspectRatio: value });
     writeFile({ ...pickSettings(get()), defaultAspectRatio: value });
+  },
+
+  setKeepOriginalPhoto: async (value) => {
+    set({ keepOriginalPhoto: value });
+    writeFile({ ...pickSettings(get()), keepOriginalPhoto: value });
   },
 
   setLastDateStampPrefs: async ({ enabled, position, format }) => {

@@ -24,7 +24,6 @@ export const media = sqliteTable("media", {
   caption: text(),
   duration: integer(), // Duration in seconds for videos
   order: integer().notNull().default(0), // Order of media files for a specific entry
-  overlayMeta: text("overlay_meta"), // JSON: { caption, dateStamp, trim, volume }
   createdAt: integer({ mode: "timestamp" })
     .notNull()
     .$default(() => new Date()),

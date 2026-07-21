@@ -14,6 +14,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import * as MediaLibrary from "expo-media-library/legacy";
 import { captureRef } from "react-native-view-shot";
+import { useVideoPlayer } from "expo-video";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, radius, spacing } from "@/theme";
 import useEditorStore from "@/store/editor.store";
@@ -22,7 +23,7 @@ import useMediaStore from "@/store/media.store";
 import useSettingsStore from "@/store/settings.store";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
-import { MediaFrame, computeFrameRatio } from "@/components/editor/MediaFrame";
+import { MediaFrame, frameSize } from "@/components/editor/MediaFrame";
 import { CaptionPanel } from "@/components/editor/CaptionPanel";
 import { TrimPanel, type TrimRange } from "@/components/editor/TrimPanel";
 import { VolumePanel } from "@/components/editor/VolumePanel";
@@ -32,7 +33,8 @@ import { DraggableCaption } from "@/components/editor/DraggableCaption";
 import type { DateStampFormat, DateStampPosition } from "@/types";
 
 type Tab = "caption" | "date" | "trim" | "volume";
-type Orientation = "portrait" | "landscape";
+type Fit = "portrait" | "landscape";
+type FAIconName = React.ComponentProps<typeof FontAwesomeFreeSolid>["name"];
 
 const H_PAD = 16;
 
@@ -55,33 +57,64 @@ export default function EditorScreen() {
   const currentEntryId = useEntryStore((s) => s.currentId);
   const setRecentlySavedMediaURI = useMediaStore((s) => s.setRecentlySavedMediaURI);
   const saveToGallery = useSettingsStore((s) => s.saveToGallery);
+  const keepOriginalPhoto = useSettingsStore((s) => s.keepOriginalPhoto);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const lastDateStampEnabled = useSettingsStore((s) => s.lastDateStampEnabled);
   const lastDateStampPosition = useSettingsStore((s) => s.lastDateStampPosition);
   const lastDateStampFormat = useSettingsStore((s) => s.lastDateStampFormat);
   const setLastDateStampPrefs = useSettingsStore((s) => s.setLastDateStampPrefs);
 
-  // Derive initial orientation from the base ratio
-  const initOrientation: Orientation =
-    defaultAspectRatio === "9:16" ? "portrait" : "landscape";
+  // Derived early so hooks below can reference it
+  const isVideo = pendingMedia?.type === "video";
 
+  // Video player — always created (null source = no-op for photos), hooks must be unconditional
+  const videoPlayer = useVideoPlayer(
+    isVideo && !pendingMedia?.isLoading ? pendingMedia!.uri : null,
+    (p) => { p.loop = true; p.muted = false; },
+  );
+
+  // State
+  const initFit: Fit = defaultAspectRatio === "9:16" ? "portrait" : "landscape";
   const [activeTab, setActiveTab] = useState<Tab>("caption");
   const [captionText, setCaptionText] = useState("");
-  const [orientation, setOrientation] = useState<Orientation>(initOrientation);
-  const [trimRange, setTrimRange] = useState<TrimRange>({ start: 0, end: 0 });
-  const [videoDuration] = useState(0);
+  const [fit, setFit] = useState<Fit>(initFit);
+  const trimRangeRef = useRef<TrimRange>({ start: 0, end: 0 });
+  const setTrimRange = (r: TrimRange) => { trimRangeRef.current = r; };
+  const [videoDuration, setVideoDuration] = useState(0);
+  const [playheadTime, setPlayheadTime] = useState(0);
   const [volume, setVolume] = useState(1);
   const [dateStampEnabled, setDateStampEnabled] = useState(lastDateStampEnabled);
   const [dateStampPosition, setDateStampPosition] = useState<DateStampPosition>(lastDateStampPosition);
   const [dateStampFormat, setDateStampFormat] = useState<DateStampFormat>(lastDateStampFormat);
   const [isSaving, setIsSaving] = useState(false);
 
-  const dateKey = todayDateKey();
-  const isVideo = pendingMedia?.type === "video";
+  // Track video duration once the player is ready
+  useEffect(() => {
+    if (!isVideo) return;
+    const sub = videoPlayer.addListener("statusChange", () => {
+      const d = videoPlayer.duration;
+      if (d > 0) {
+        setVideoDuration(d);
+        setTrimRange({ start: 0, end: d });
+      }
+    });
+    return () => sub.remove();
+  }, [isVideo, videoPlayer]);
 
-  // Frame dimensions (needed for DraggableCaption bounds)
-  const frameW = screenW - H_PAD * 2;
-  const frameH = frameW / computeFrameRatio(defaultAspectRatio, orientation);
+  // Track playhead for the timeline needle
+  useEffect(() => {
+    if (!isVideo || !videoDuration) return;
+    videoPlayer.timeUpdateEventInterval = 0.05;
+    const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
+      setPlayheadTime(currentTime);
+    });
+    return () => sub.remove();
+  }, [isVideo, videoPlayer, videoDuration]);
+
+  const dateKey = todayDateKey();
+
+  // Frame dimensions — constant, derived from aspect ratio only
+  const { width: frameW, height: frameH } = frameSize(defaultAspectRatio, screenW);
 
   // Frame gestures are disabled while the user positions the caption
   const captionDragMode = activeTab === "caption" && captionText.length > 0;
@@ -90,19 +123,19 @@ export default function EditorScreen() {
     if (!pendingMedia) router.back();
   }, []);
 
-  const tabs: { id: Tab; icon: string; label: string }[] = [
+  const tabs: { id: Tab; icon: FAIconName; label: string }[] = [
     { id: "caption", icon: "pen", label: "Caption" },
     { id: "date", icon: "calendar-days", label: "Date" },
     ...(isVideo
       ? [
-          { id: "trim" as Tab, icon: "scissors", label: "Trim" },
-          { id: "volume" as Tab, icon: "volume-high", label: "Volume" },
+          { id: "trim" as Tab, icon: "scissors" as FAIconName, label: "Trim" },
+          { id: "volume" as Tab, icon: "volume-high" as FAIconName, label: "Volume" },
         ]
       : []),
   ];
 
-  function toggleOrientation() {
-    setOrientation((o) => (o === "landscape" ? "portrait" : "landscape"));
+  function toggleFit() {
+    setFit((f: Fit) => (f === "landscape" ? "portrait" : "landscape"));
   }
 
   async function handleSave() {
@@ -111,11 +144,11 @@ export default function EditorScreen() {
     try {
       let localUri: string;
 
-      if (isVideo) {
-        // Can't burn overlays into video frames — save original
+      if (isVideo || keepOriginalPhoto) {
+        // Video: overlays can't be burned in. Photo + keepOriginal: save source as-is.
         localUri = await mediaService.copyMedia(pendingMedia.uri);
       } else {
-        // Capture the frame view (with caption + date stamp composited)
+        // Default: capture the frame view with all overlays composited into the image.
         const capturedUri = await captureRef(frameRef, {
           format: "jpg",
           quality: 0.92,
@@ -125,7 +158,8 @@ export default function EditorScreen() {
       }
 
       if (saveToGallery) {
-        await MediaLibrary.createAssetAsync(pendingMedia.uri);
+        // Save whichever version is stored — not always the raw source.
+        await MediaLibrary.createAssetAsync(localUri);
       }
 
       if (currentEntryId !== null) {
@@ -187,14 +221,14 @@ export default function EditorScreen() {
           <Text style={s.headerTitle}>Edit</Text>
 
           {/* Portrait / Landscape toggle */}
-          <Pressable style={s.orientBtn} onPress={toggleOrientation} hitSlop={8}>
+          <Pressable style={s.orientBtn} onPress={toggleFit} hitSlop={8}>
             <FontAwesomeFreeSolid
-              name={orientation === "portrait" ? "mobile-screen" : "mobile-screen-button"}
+              name={fit === "portrait" ? "mobile-screen" : "mobile-screen-button"}
               size={15}
               color={colors.textSecondary}
             />
             <Text style={s.orientLabel}>
-              {orientation === "portrait" ? "Portrait" : "Landscape"}
+              {fit === "portrait" ? "Portrait" : "Landscape"}
             </Text>
           </Pressable>
         </View>
@@ -205,7 +239,8 @@ export default function EditorScreen() {
             ref={frameRef}
             media={pendingMedia}
             aspectRatio={defaultAspectRatio}
-            orientation={orientation}
+            fit={fit}
+            player={videoPlayer}
             gesturesEnabled={!captionDragMode}
           >
             {/* Draggable caption — burned into photo on save */}
@@ -274,11 +309,14 @@ export default function EditorScreen() {
               onFormatChange={setDateStampFormat}
             />
           )}
-          {activeTab === "trim" && isVideo && (
+          {activeTab === "trim" && isVideo && pendingMedia && (
             <TrimPanel
+              videoUri={pendingMedia.uri}
+              player={videoPlayer}
               duration={videoDuration}
-              range={trimRange}
               onRangeChange={setTrimRange}
+              playhead={playheadTime}
+              onSeek={setPlayheadTime}
             />
           )}
           {activeTab === "volume" && isVideo && (
