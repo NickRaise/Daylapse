@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { File, Paths } from "expo-file-system";
-import type { AspectRatio, DateStampFormat, DateStampPosition } from "@/types";
+import type { AspectRatio, CaptionStyle, DateStampFormat, DateStampPosition, DateStampStyle } from "@/types";
 
 const settingsFile = new File(Paths.document, "app-settings.json");
 
@@ -16,10 +16,13 @@ type Settings = {
   defaultAspectRatio: AspectRatio;
   // Storage
   keepOriginalPhoto: boolean;
-  // Editor date stamp prefs (auto-saved by editor, not in settings UI)
+  // Editor prefs — auto-saved on every save, not exposed in settings UI
   lastDateStampEnabled: boolean;
   lastDateStampPosition: DateStampPosition;
   lastDateStampFormat: DateStampFormat;
+  lastCaptionStyle: CaptionStyle;
+  lastDateStampStyle: DateStampStyle;
+  lastVolume: number;
 };
 
 type SettingsState = Settings & {
@@ -31,10 +34,13 @@ type SettingsState = Settings & {
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
   setKeepOriginalPhoto: (value: boolean) => Promise<void>;
-  setLastDateStampPrefs: (prefs: {
-    enabled: boolean;
-    position: DateStampPosition;
-    format: DateStampFormat;
+  setLastEditorPrefs: (prefs: {
+    captionStyle: CaptionStyle;
+    dateStampStyle: DateStampStyle;
+    volume: number;
+    dateStampEnabled: boolean;
+    dateStampPosition: DateStampPosition;
+    dateStampFormat: DateStampFormat;
   }) => Promise<void>;
 };
 
@@ -48,6 +54,17 @@ const DEFAULTS: Settings = {
   lastDateStampEnabled: false,
   lastDateStampPosition: "bottom-right",
   lastDateStampFormat: "DD MMM YYYY",
+  lastCaptionStyle: {
+    textColor: "#FFFFFF",
+    bgColor: "rgba(0,0,0,0.5)",
+    size: "md",
+    position: "bottom-center",
+  },
+  lastDateStampStyle: {
+    textColor: "#FFFFFF",
+    bgColor: "rgba(0,0,0,0.45)",
+  },
+  lastVolume: 1,
 };
 
 async function readFile(): Promise<Settings> {
@@ -75,6 +92,9 @@ function pickSettings(state: SettingsState): Settings {
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastDateStampPosition: state.lastDateStampPosition,
     lastDateStampFormat: state.lastDateStampFormat,
+    lastCaptionStyle: state.lastCaptionStyle,
+    lastDateStampStyle: state.lastDateStampStyle,
+    lastVolume: state.lastVolume,
   };
 }
 
@@ -117,17 +137,23 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     writeFile({ ...pickSettings(get()), keepOriginalPhoto: value });
   },
 
-  setLastDateStampPrefs: async ({ enabled, position, format }) => {
+  setLastEditorPrefs: async ({ captionStyle, dateStampStyle, volume, dateStampEnabled, dateStampPosition, dateStampFormat }) => {
     set({
-      lastDateStampEnabled: enabled,
-      lastDateStampPosition: position,
-      lastDateStampFormat: format,
+      lastCaptionStyle: captionStyle,
+      lastDateStampStyle: dateStampStyle,
+      lastVolume: volume,
+      lastDateStampEnabled: dateStampEnabled,
+      lastDateStampPosition: dateStampPosition,
+      lastDateStampFormat: dateStampFormat,
     });
     writeFile({
       ...pickSettings(get()),
-      lastDateStampEnabled: enabled,
-      lastDateStampPosition: position,
-      lastDateStampFormat: format,
+      lastCaptionStyle: captionStyle,
+      lastDateStampStyle: dateStampStyle,
+      lastVolume: volume,
+      lastDateStampEnabled: dateStampEnabled,
+      lastDateStampPosition: dateStampPosition,
+      lastDateStampFormat: dateStampFormat,
     });
   },
 }));

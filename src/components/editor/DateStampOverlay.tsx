@@ -1,35 +1,33 @@
 import { StyleSheet, Text, View } from "react-native";
-import type { DateStampFormat, DateStampPosition } from "@/types";
+import type { DateStampFormat } from "@/types";
 
 type Props = {
-  dateKey: string; // YYYY-MM-DD
-  position: DateStampPosition;
+  dateKey: string;
   format: DateStampFormat;
+  textColor?: string;
+  bgColor?: string;
 };
 
-const MONTH_ABBR = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
 function formatDate(dateKey: string, fmt: DateStampFormat): string {
   const [year, month, day] = dateKey.split("-").map(Number);
   const mon = MONTH_ABBR[month - 1] ?? "";
-  if (fmt === "DD MMM") return `${day} ${mon}`;
+  if (fmt === "DD MMM")      return `${day} ${mon}`;
   if (fmt === "DD MMM YYYY") return `${day} ${mon} ${year}`;
   return `${mon} ${day}, ${year}`;
 }
 
-const POSITION_STYLE: Record<DateStampPosition, object> = {
-  "top-left": { top: 12, left: 12 },
-  "top-right": { top: 12, right: 12 },
-  "bottom-left": { bottom: 12, left: 12 },
-  "bottom-right": { bottom: 12, right: 12 },
-};
-
-export function DateStampOverlay({ dateKey, position, format }: Props) {
-  const label = formatDate(dateKey, format);
-
+export function DateStampOverlay({
+  dateKey,
+  format,
+  textColor = "#FFFFFF",
+  bgColor = "rgba(0,0,0,0.45)",
+}: Props) {
   return (
-    <View style={[s.root, POSITION_STYLE[position]]} pointerEvents="none">
-      <Text style={s.text}>{label}</Text>
+    // Position is always bottom-right — not user-configurable
+    <View style={[s.root, { backgroundColor: bgColor }]} pointerEvents="none">
+      <Text style={[s.text, { color: textColor }]}>{formatDate(dateKey, format)}</Text>
     </View>
   );
 }
@@ -37,7 +35,8 @@ export function DateStampOverlay({ dateKey, position, format }: Props) {
 const s = StyleSheet.create({
   root: {
     position: "absolute",
-    backgroundColor: "rgba(0,0,0,0.45)",
+    bottom: 12,
+    right: 12,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -45,7 +44,6 @@ const s = StyleSheet.create({
   text: {
     fontSize: 11,
     fontWeight: "600",
-    color: "#fff",
     letterSpacing: 0.5,
     fontFamily: "Caveat",
   },

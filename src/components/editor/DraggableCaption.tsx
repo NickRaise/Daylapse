@@ -1,22 +1,51 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { colors } from "@/theme";
+import type { CaptionPosition, CaptionSize } from "@/types";
+
+const SIZE_FONT: Record<CaptionSize, number> = { sm: 12, md: 16, lg: 22 };
+const MARGIN = 24;
+
+function presetToCoords(pos: CaptionPosition, fw: number, fh: number) {
+  const parts = pos.split("-");
+  const vert  = parts[0];
+  const horiz = parts.length > 1 ? parts[1] : "center";
+  const x = horiz === "left" ? MARGIN : horiz === "right" ? fw - MARGIN : fw / 2;
+  const y = vert  === "top"  ? MARGIN : vert  === "bottom" ? fh - MARGIN : fh / 2;
+  return { x, y };
+}
 
 type Props = {
   text: string;
   frameWidth: number;
   frameHeight: number;
-  /** When false the caption is rendered but not draggable. */
+  textColor?: string;
+  bgColor?: string;
+  size?: CaptionSize;
+  position?: CaptionPosition;
   draggable?: boolean;
 };
 
-export function DraggableCaption({ text, frameWidth, frameHeight, draggable = true }: Props) {
-  const [pos, setPos] = useState({
-    x: frameWidth / 2,
-    y: frameHeight * 0.5,
-  });
+export function DraggableCaption({
+  text,
+  frameWidth,
+  frameHeight,
+  textColor = "#FFFFFF",
+  bgColor = "rgba(0,0,0,0.5)",
+  size = "md",
+  position = "bottom-center",
+  draggable = true,
+}: Props) {
+  const [pos, setPos] = useState(() =>
+    presetToCoords(position, frameWidth, frameHeight),
+  );
   const drag = useRef({ startTX: 0, startTY: 0, initX: 0, initY: 0 });
   const [measured, setMeasured] = useState({ w: 0, h: 0 });
+
+  // Snap to preset when user picks a new position
+  useEffect(() => {
+    setPos(presetToCoords(position, frameWidth, frameHeight));
+  }, [position, frameWidth, frameHeight]);
 
   if (!text) return null;
 
@@ -31,6 +60,7 @@ export function DraggableCaption({ text, frameWidth, frameHeight, draggable = tr
           position: "absolute",
           left: pos.x - halfW,
           top: pos.y - halfH,
+          backgroundColor: bgColor,
         },
       ]}
       onLayout={(e) => {
@@ -55,34 +85,26 @@ export function DraggableCaption({ text, frameWidth, frameHeight, draggable = tr
         });
       }}
     >
-      <Text style={s.text}>{text}</Text>
+      <Text style={[s.text, { color: textColor, fontSize: SIZE_FONT[size] }]}>
+        {text}
+      </Text>
       {draggable && <View style={s.dragHint} pointerEvents="none" />}
     </View>
   );
 }
 
 const s = StyleSheet.create({
-  wrapper: {
-    backgroundColor: "rgba(0,0,0,0.45)",
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
+  wrapper: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6 },
   text: {
-    color: "#fff",
-    fontSize: 16,
     fontWeight: "600",
     letterSpacing: 0.3,
-    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
   dragHint: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    top: 0, left: 0, right: 0, bottom: 0,
     borderRadius: 6,
     borderWidth: 1.5,
     borderColor: colors.primary,

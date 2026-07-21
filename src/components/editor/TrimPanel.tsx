@@ -53,7 +53,7 @@ export function TrimPanel({
   const [trackWidth, setTrackWidth] = useState(0);
   const [thumbUris, setThumbUris] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState(player.playing);
-  const [clipDuration, setClipDuration] = useState(3);
+  const [clipDuration, setClipDuration] = useState(1);
   const [customText, setCustomText] = useState("");
   const [isCustom, setIsCustom] = useState(false);
 
@@ -202,7 +202,88 @@ export function TrimPanel({
   return (
     <View style={s.root}>
 
-      {/* ── Clip duration selector ── */}
+      {/* ── 1. Playback controls — centred, play button prominent ── */}
+      <View style={s.controls}>
+        <View style={s.controlsSide} />
+
+        <View style={s.btnGroup}>
+          <Pressable style={s.stepBtn} hitSlop={12} onPress={() => stepBlock(-STEP_S)}>
+            <FontAwesomeFreeSolid name="backward-step" size={13} color={colors.textSecondary} />
+          </Pressable>
+
+          <Pressable
+            style={s.playBtn}
+            hitSlop={8}
+            onPress={() => (isPlaying ? player.pause() : player.play())}
+          >
+            <FontAwesomeFreeSolid
+              name={isPlaying ? "pause" : "play"}
+              size={15}
+              color={colors.textOnAccent}
+            />
+          </Pressable>
+
+          <Pressable style={s.stepBtn} hitSlop={12} onPress={() => stepBlock(STEP_S)}>
+            <FontAwesomeFreeSolid name="forward-step" size={13} color={colors.textSecondary} />
+          </Pressable>
+        </View>
+
+        <View style={s.controlsSide}>
+          <Text style={s.timeDisplay}>
+            {fmt(playhead)}
+            <Text style={s.timeSep}> / </Text>
+            {fmt(duration)}
+          </Text>
+        </View>
+      </View>
+
+      {/* ── 2. Trimmer reel ── */}
+      <View
+        style={s.timelineContainer}
+        onLayout={(e) => {
+          const w = e.nativeEvent.layout.width;
+          setTrackWidth(w);
+          trackW.value = w;
+        }}
+      >
+        <View style={s.strip} pointerEvents="none">
+          <View style={s.thumbRow}>
+            {thumbUris.length > 0
+              ? thumbUris.map((uri, i) => (
+                  <Image
+                    key={i}
+                    source={{ uri }}
+                    style={{ width: thumbW, height: STRIP_H }}
+                    contentFit="cover"
+                  />
+                ))
+              : Array.from({ length: THUMB_COUNT }).map((_, i) => (
+                  <View key={i} style={[s.thumbPlaceholder, { width: thumbW }]} />
+                ))}
+          </View>
+
+          <Animated.View style={[s.dim, s.dimLeft, dimLeftStyle]} />
+          <Animated.View style={[s.dim, s.dimRight, dimRightStyle]} />
+        </View>
+
+        {trackWidth > 0 && (
+          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+            <GestureDetector gesture={blockPan}>
+              <Animated.View style={[s.block, blockStyle]}>
+                <View style={[s.bracket, s.bracketLeft]} />
+                <View style={[s.bracket, s.bracketRight]} />
+                <View style={s.blockBorderTop} />
+                <View style={s.blockBorderBottom} />
+              </Animated.View>
+            </GestureDetector>
+          </View>
+        )}
+      </View>
+
+      {/* ── 3. Duration only — centred, primary colour ── */}
+      <Text style={s.clipDurLabel}>{safeClipDur.toFixed(1)}s</Text>
+
+      {/* ── 4. Clip length selector — secondary, at bottom ── */}
       <View style={s.durationRow}>
         <Text style={s.durationLabel}>Clip</Text>
         {PRESET_DURATIONS.map((d) => {
@@ -217,8 +298,6 @@ export function TrimPanel({
             </Pressable>
           );
         })}
-
-        {/* Custom input */}
         <Pressable
           style={[s.pill, isCustom && s.pillActive]}
           onPress={() => setIsCustom(true)}
@@ -241,92 +320,6 @@ export function TrimPanel({
             <Text style={[s.pillText, isCustom && s.pillTextActive]}>Custom</Text>
           )}
         </Pressable>
-      </View>
-
-      {/* ── Playback controls ── */}
-      <View style={s.controls}>
-        <Pressable style={s.ctrlBtn} hitSlop={12} onPress={() => stepBlock(-STEP_S)}>
-          <FontAwesomeFreeSolid name="backward-step" size={14} color={colors.textSecondary} />
-        </Pressable>
-
-        <Pressable
-          style={[s.ctrlBtn, s.playBtn]}
-          hitSlop={8}
-          onPress={() => (isPlaying ? player.pause() : player.play())}
-        >
-          <FontAwesomeFreeSolid
-            name={isPlaying ? "pause" : "play"}
-            size={13}
-            color={colors.textPrimary}
-          />
-        </Pressable>
-
-        <Pressable style={s.ctrlBtn} hitSlop={12} onPress={() => stepBlock(STEP_S)}>
-          <FontAwesomeFreeSolid name="forward-step" size={14} color={colors.textSecondary} />
-        </Pressable>
-
-        <Text style={s.timeDisplay}>
-          {fmt(playhead)}
-          <Text style={s.timeSep}> / </Text>
-          {fmt(duration)}
-        </Text>
-      </View>
-
-      {/* ── Timeline ── */}
-      <View
-        style={s.timelineContainer}
-        onLayout={(e) => {
-          const w = e.nativeEvent.layout.width;
-          setTrackWidth(w);
-          trackW.value = w;
-        }}
-      >
-        {/* Thumbnail strip — overflow:hidden, pointerEvents none so overlay gets touches */}
-        <View style={s.strip} pointerEvents="none">
-          <View style={s.thumbRow}>
-            {thumbUris.length > 0
-              ? thumbUris.map((uri, i) => (
-                  <Image
-                    key={i}
-                    source={{ uri }}
-                    style={{ width: thumbW, height: STRIP_H }}
-                    contentFit="cover"
-                  />
-                ))
-              : Array.from({ length: THUMB_COUNT }).map((_, i) => (
-                  <View key={i} style={[s.thumbPlaceholder, { width: thumbW }]} />
-                ))}
-          </View>
-
-          {/* Dim outside the selected clip */}
-          <Animated.View style={[s.dim, s.dimLeft, dimLeftStyle]} />
-          <Animated.View style={[s.dim, s.dimRight, dimRightStyle]} />
-        </View>
-
-        {/* Interactive overlay — no overflow:hidden */}
-        {trackWidth > 0 && (
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            <GestureDetector gesture={blockPan}>
-              <Animated.View style={[s.block, blockStyle]}>
-                {/* Left bracket */}
-                <View style={[s.bracket, s.bracketLeft]} />
-                {/* Right bracket */}
-                <View style={[s.bracket, s.bracketRight]} />
-                {/* Top border */}
-                <View style={s.blockBorderTop} />
-                {/* Bottom border */}
-                <View style={s.blockBorderBottom} />
-              </Animated.View>
-            </GestureDetector>
-          </View>
-        )}
-      </View>
-
-      {/* ── Time labels ── */}
-      <View style={s.timeRow}>
-        <Text style={s.timeLabel}>{fmt(clipStartRef.current)}</Text>
-        <Text style={s.clipDurLabel}>{safeClipDur.toFixed(1)}s</Text>
-        <Text style={s.timeLabel}>{fmt(clipEndDisplay)}</Text>
       </View>
 
     </View>
@@ -390,12 +383,21 @@ const s = StyleSheet.create({
   controls: {
     flexDirection: "row",
     alignItems: "center",
-    gap: spacing[2],
   },
-  ctrlBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  controlsSide: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
+  btnGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+  },
+  stepBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.bgSubtle,
     borderWidth: 1,
     borderColor: colors.border,
@@ -403,12 +405,19 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   playBtn: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + "22",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 4,
   },
   timeDisplay: {
-    flex: 1,
-    textAlign: "right",
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     fontVariant: ["tabular-nums"],
@@ -482,20 +491,11 @@ const s = StyleSheet.create({
     backgroundColor: colors.primary,
   },
 
-  // Time row
-  timeRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  timeLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textMuted,
-    fontVariant: ["tabular-nums"],
-  },
   clipDurLabel: {
-    fontSize: fontSize.xs,
-    fontWeight: "600",
+    textAlign: "center",
+    fontSize: fontSize.base,
+    fontWeight: "700",
     color: colors.primary,
+    letterSpacing: 0.3,
   },
 });
