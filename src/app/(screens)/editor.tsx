@@ -27,7 +27,6 @@ import { MediaFrame, frameSize } from "@/components/editor/MediaFrame";
 import { CaptionPanel } from "@/components/editor/CaptionPanel";
 import { TrimPanel, type TrimRange } from "@/components/editor/TrimPanel";
 import { VolumePanel } from "@/components/editor/VolumePanel";
-import { DateStampControl } from "@/components/editor/DateStampControl";
 import { DateStampOverlay } from "@/components/editor/DateStampOverlay";
 import { DraggableCaption } from "@/components/editor/DraggableCaption";
 import type { CaptionStyle, DateStampFormat, DateStampPosition, DateStampStyle } from "@/types";
@@ -218,24 +217,14 @@ export default function EditorScreen() {
   // Caption + Date: shared between the photo single-panel and the video "Text" tab
   function renderTextPanel() {
     return (
-      <>
-        <DateStampControl
-          enabled={dateStampEnabled}
-          format={dateStampFormat}
-          onToggle={setDateStampEnabled}
-          onFormatChange={setDateStampFormat}
-        />
-        <View style={s.panelDivider} />
-        <CaptionPanel
-          value={captionText}
-          onChange={setCaptionText}
-          style={captionStyle}
-          onStyleChange={setCaptionStyle}
-          dateStyle={dateStampStyle}
-          onDateStyleChange={setDateStampStyle}
-          isVideo={isVideo}
-        />
-      </>
+      <CaptionPanel
+        value={captionText}
+        onChange={setCaptionText}
+        style={captionStyle}
+        onStyleChange={setCaptionStyle}
+        dateEnabled={dateStampEnabled}
+        onDateToggle={setDateStampEnabled}
+      />
     );
   }
 
