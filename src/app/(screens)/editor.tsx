@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,6 +16,7 @@ import * as MediaLibrary from "expo-media-library/legacy";
 import { captureRef } from "react-native-view-shot";
 import { useVideoPlayer } from "expo-video";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
+import { useSharedValue, withTiming } from "react-native-reanimated";
 import { colors, fontSize, radius, spacing } from "@/theme";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
@@ -91,6 +92,9 @@ export default function EditorScreen() {
   const setTrimRange = (r: TrimRange) => { trimRangeRef.current = r; };
   const [videoDuration, setVideoDuration] = useState(0);
   const [playheadTime, setPlayheadTime] = useState(0);
+  // Shared value updated directly from the player — drives the needle on the UI
+  // thread without touching React state, eliminating the re-render lag.
+  const playheadSV = useSharedValue(0);
   const [volume, setVolume] = useState(lastVolume);
   const [dateStampEnabled, setDateStampEnabled] = useState(lastDateStampEnabled);
   const [dateStampPosition, setDateStampPosition] = useState<DateStampPosition>(lastDateStampPosition);
@@ -107,26 +111,37 @@ export default function EditorScreen() {
     if (!isVideo) return;
     const sub = videoPlayer.addListener("statusChange", () => {
       const d = videoPlayer.duration;
-      if (d > 0) {
-        setVideoDuration(d);
-        setTrimRange({ start: 0, end: d });
-      }
+      if (d > 0) setVideoDuration(d);
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
 
-  // Feed playhead position into the trim timeline
+  // Feed playhead into the needle (via shared value, bypasses React) and the
+  // time display (via state, throttled to ~10 fps to avoid constant re-renders).
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
     videoPlayer.timeUpdateEventInterval = 0.05;
+    let lastDisplayT = -1;
     const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
-      setPlayheadTime(currentTime);
+      // Smooth interpolation to bridge the 50 ms gaps — runs entirely on UI thread
+      playheadSV.value = withTiming(currentTime, { duration: 80 });
+      // Only update React state ~10× per second for the timestamp display
+      if (Math.abs(currentTime - lastDisplayT) >= 0.1) {
+        lastDisplayT = currentTime;
+        setPlayheadTime(currentTime);
+      }
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer, videoDuration]);
 
   const dateKey = todayDateKey();
   const { width: frameW, height: frameH } = frameSize(defaultAspectRatio, screenW);
+  // Instant seek: bypass withTiming so the needle jumps immediately on drag/tap/step.
+  const handleSeek = useCallback((t: number) => {
+    playheadSV.value = t;
+    setPlayheadTime(t);
+  }, []);
+
   const captionDragMode = activeTab === "text" && captionText.length > 0;
 
   useEffect(() => {
@@ -239,7 +254,8 @@ export default function EditorScreen() {
           duration={videoDuration}
           onRangeChange={setTrimRange}
           playhead={playheadTime}
-          onSeek={setPlayheadTime}
+          playheadSV={playheadSV}
+          onSeek={handleSeek}
         />
         <View style={s.panelDivider} />
         <VolumePanel volume={volume} onVolumeChange={setVolume} />
