@@ -4,6 +4,7 @@ import { ScrollView, GestureDetector } from "react-native-gesture-handler";
 import { Image } from "expo-image";
 import Animated, { type SharedValue } from "react-native-reanimated";
 import type { VideoPlayer } from "expo-video";
+import { colors } from "@/theme";
 import { useClipBlock } from "@/hooks/useClipBlock";
 import { useThumbnails, THUMB_COUNT } from "@/hooks/useThumbnails";
 import { TrimControls } from "@/components/editor/TrimControls";
@@ -192,7 +193,7 @@ const s = StyleSheet.create({
     top: 0,
     width: BRACKET_W,
     height: STRIP_H,
-    backgroundColor: "#6C47FF",
+    backgroundColor: colors.primary,
   },
   bracketLeft:  { left: 0,  borderTopLeftRadius: 3,  borderBottomLeftRadius: 3 },
   bracketRight: { right: 0, borderTopRightRadius: 3, borderBottomRightRadius: 3 },
@@ -202,7 +203,7 @@ const s = StyleSheet.create({
     left: BRACKET_W,
     right: BRACKET_W,
     height: BORDER_H,
-    backgroundColor: "#6C47FF",
+    backgroundColor: colors.primary,
   },
   blockBorderBottom: {
     position: "absolute",
@@ -210,7 +211,7 @@ const s = StyleSheet.create({
     left: BRACKET_W,
     right: BRACKET_W,
     height: BORDER_H,
-    backgroundColor: "#6C47FF",
+    backgroundColor: colors.primary,
   },
 
   needle: {
