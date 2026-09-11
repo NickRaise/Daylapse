@@ -1,4 +1,5 @@
 import { CameraMode } from "expo-camera";
+import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
@@ -139,8 +140,8 @@ export function CameraControls({
         {/* Gallery — hidden while recording */}
         <View style={s.sideBtn}>
           {!isRecording && (
-            <TouchableOpacity style={s.sideBtn} onPress={onGallery}>
-              <Text style={t.sideBtnIcon}>⊞</Text>
+            <TouchableOpacity style={s.sideBtn} onPress={onGallery} hitSlop={10}>
+              <FontAwesomeFreeSolid name="images" size={22} color={colors.textPrimary} />
               <Text style={t.sideBtnLabel}>Gallery</Text>
             </TouchableOpacity>
           )}
@@ -173,7 +174,7 @@ export function CameraControls({
         {/* Flip — hidden while recording */}
         <View style={s.sideBtn}>
           {!isRecording && (
-            <TouchableOpacity style={s.sideBtn} onPress={onFlip}>
+            <TouchableOpacity style={s.sideBtn} onPress={onFlip} hitSlop={10}>
               <Text style={t.sideBtnIcon}>↺</Text>
               <Text style={t.sideBtnLabel}>Flip</Text>
             </TouchableOpacity>

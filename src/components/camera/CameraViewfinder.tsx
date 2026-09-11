@@ -1,4 +1,5 @@
 import { CameraView, CameraType, CameraMode } from "expo-camera";
+import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { RefObject } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { colors, radius, spacing, fontSize } from "../../theme";
@@ -40,12 +41,12 @@ export function CameraViewfinder({
           <Text style={t.recText}>REC</Text>
         </View>
       ) : (
-        <TouchableOpacity style={s.nativeBtn} onPress={onOpenNativeCamera}>
-          <Text style={t.nativeBtnIcon}>⊙</Text>
+        <TouchableOpacity style={s.nativeBtn} onPress={onOpenNativeCamera} hitSlop={12}>
+          <FontAwesomeFreeSolid name="camera" size={16} color={colors.textPrimary} />
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity style={s.closeBtn} onPress={onClose}>
+      <TouchableOpacity style={s.closeBtn} onPress={onClose} hitSlop={12}>
         <Text style={t.closeBtnText}>✕</Text>
       </TouchableOpacity>
     </View>
@@ -108,10 +109,6 @@ const t = StyleSheet.create({
   closeBtnText: {
     fontSize: fontSize.base,
     fontWeight: "600",
-    color: colors.textPrimary,
-  },
-  nativeBtnIcon: {
-    fontSize: 18,
     color: colors.textPrimary,
   },
   recText: {
