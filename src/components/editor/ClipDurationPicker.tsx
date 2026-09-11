@@ -13,10 +13,20 @@ type Props = {
 export function ClipDurationPicker({ currentDuration, maxDuration, onDurationChange }: Props) {
   const [isCustom, setIsCustom] = useState(false);
   const [customText, setCustomText] = useState("");
+  // Tracks which preset the user picked, separately from the (possibly
+  // clamped) applied duration, so a too-long preset still shows selected.
+  const [selectedPreset, setSelectedPreset] = useState<number | null>(
+    () => PRESET_DURATIONS.find((d) => Math.abs(currentDuration - d) < 0.05) ?? null,
+  );
 
   function handleCustomSubmit() {
     const v = parseFloat(customText);
-    if (!isNaN(v) && v > 0) onDurationChange(v);
+    if (isNaN(v) || v <= 0) return;
+    // Reflect the actual (possibly clamped) applied value, so the input never
+    // silently disagrees with what's really selected.
+    const clamped = Math.min(v, maxDuration);
+    onDurationChange(clamped);
+    setCustomText(clamped.toFixed(1));
   }
 
   return (
@@ -27,12 +37,16 @@ export function ClipDurationPicker({ currentDuration, maxDuration, onDurationCha
         <Text style={s.rowLabel}>Clip</Text>
 
         {PRESET_DURATIONS.map((d) => {
-          const active = !isCustom && Math.abs(currentDuration - d) < 0.05;
+          const active = !isCustom && selectedPreset === d;
           return (
             <Pressable
               key={d}
               style={[s.pill, active && s.pillActive]}
-              onPress={() => { setIsCustom(false); onDurationChange(d); }}
+              onPress={() => {
+                setIsCustom(false);
+                setSelectedPreset(d);
+                onDurationChange(d);
+              }}
             >
               <Text style={[s.pillText, active && s.pillTextActive]}>{d}s</Text>
             </Pressable>
@@ -41,7 +55,7 @@ export function ClipDurationPicker({ currentDuration, maxDuration, onDurationCha
 
         <Pressable
           style={[s.pill, isCustom && s.pillActive]}
-          onPress={() => setIsCustom(true)}
+          onPress={() => { setIsCustom(true); setSelectedPreset(null); }}
         >
           {isCustom ? (
             <TextInput
