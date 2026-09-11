@@ -1,7 +1,13 @@
 import { CameraMode } from "expo-camera";
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { colors, radius, spacing, fontSize } from "../../theme";
+
+const MODE_ROW_PAD = spacing[1];
+
+type ChipLayout = { x: number; width: number };
+const EMPTY_LAYOUT: ChipLayout = { x: 0, width: 0 };
 
 const LONG_PRESS_DELAY = 300; // ms before hold-to-record kicks in
 
@@ -41,6 +47,23 @@ export function CameraControls({
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // tracks what the current press gesture means
   const pressStateRef = useRef<"idle" | "pending" | "holding" | "video-tap">("idle");
+
+  const [pictureLayout, setPictureLayout] = useState<ChipLayout>(EMPTY_LAYOUT);
+  const [videoLayout, setVideoLayout] = useState<ChipLayout>(EMPTY_LAYOUT);
+  const activeLayout = mode === "picture" ? pictureLayout : videoLayout;
+
+  const thumbX = useSharedValue(0);
+  const thumbWidth = useSharedValue(0);
+
+  useEffect(() => {
+    thumbX.value = withTiming(activeLayout.x, { duration: 220 });
+    thumbWidth.value = withTiming(activeLayout.width, { duration: 220 });
+  }, [activeLayout.x, activeLayout.width]);
+
+  const thumbStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: thumbX.value }],
+    width: thumbWidth.value,
+  }));
 
   function handlePressIn() {
     if (isBusy) return;
@@ -87,15 +110,24 @@ export function CameraControls({
         </View>
       ) : (
         <View style={s.modeRow}>
+          {activeLayout.width > 0 && (
+            <Animated.View style={[s.modeThumb, thumbStyle]} pointerEvents="none" />
+          )}
           <TouchableOpacity
-            style={[s.modeChip, mode === "picture" && s.modeChipActive]}
+            style={s.modeChip}
             onPress={() => onModeChange("picture")}
+            onLayout={(e) =>
+              setPictureLayout({ x: e.nativeEvent.layout.x, width: e.nativeEvent.layout.width })
+            }
           >
             <Text style={[t.modeChipText, mode === "picture" && t.modeChipTextActive]}>Photo</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[s.modeChip, mode === "video" && s.modeChipActive]}
+            style={s.modeChip}
             onPress={() => onModeChange("video")}
+            onLayout={(e) =>
+              setVideoLayout({ x: e.nativeEvent.layout.x, width: e.nativeEvent.layout.width })
+            }
           >
             <Text style={[t.modeChipText, mode === "video" && t.modeChipTextActive]}>Video</Text>
           </TouchableOpacity>
@@ -165,7 +197,7 @@ const s = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.bgSubtle,
     borderRadius: radius.full,
-    padding: spacing[1],
+    padding: MODE_ROW_PAD,
     alignSelf: "center",
   },
   modeChip: {
@@ -173,7 +205,12 @@ const s = StyleSheet.create({
     paddingHorizontal: spacing[6],
     borderRadius: radius.full,
   },
-  modeChipActive: {
+  modeThumb: {
+    position: "absolute",
+    top: MODE_ROW_PAD,
+    bottom: MODE_ROW_PAD,
+    left: 0,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
   },
   recordingRow: {
