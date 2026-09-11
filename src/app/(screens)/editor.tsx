@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, spacing } from "@/theme";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
@@ -179,8 +180,16 @@ export default function EditorScreen() {
             pointerEvents={captionDragMode ? "auto" : "none"}
           >
             <Text style={s.dragHint}>Drag the text to reposition</Text>
-            <Pressable onPress={() => setCaptionResetToken((n) => n + 1)} hitSlop={8}>
-              <Text style={s.resetLink}>Reset position</Text>
+            <Pressable
+              style={s.resetBtn}
+              onPress={() => setCaptionResetToken((n) => n + 1)}
+              hitSlop={16}
+            >
+              <FontAwesomeFreeSolid
+                name="arrow-rotate-left"
+                size={13}
+                color={colors.primary}
+              />
             </Pressable>
           </View>
         </View>
@@ -263,11 +272,12 @@ const s = StyleSheet.create({
     color: colors.primary,
     fontStyle: "italic",
   },
-  resetLink: {
-    fontSize: fontSize.xs,
-    color: colors.primary,
-    fontWeight: "600",
-    textDecorationLine: "underline",
+  resetBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
   },
   dragHintHidden: {
     opacity: 0,
