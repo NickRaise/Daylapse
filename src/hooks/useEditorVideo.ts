@@ -29,7 +29,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
   const videoPlayer = useVideoPlayer(
     isVideo && mediaUri ? mediaUri : null,
     (p) => {
-      p.loop = true;
+      p.loop = false; // native loop would race our own clip-end pause
       p.muted = false;
     },
   );
@@ -38,6 +38,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
   const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null);
   const playheadSV = useSharedValue(0);
   const trimRangeRef = useRef<TrimRange>({ start: 0, end: 0 });
+  const autoPausedRef = useRef(false);
 
   const setTrimRange = useCallback((r: TrimRange) => {
     trimRangeRef.current = r;
@@ -56,8 +57,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
 
-  // recordAsync only returns a uri, so dimensions resolve after the player loads it.
-  // `sourceLoad` can fire before this subscribes, so also read videoTrack directly.
+  // Also reads videoTrack directly since sourceLoad can fire before this subscribes.
   useEffect(() => {
     if (!isVideo) return;
     const readSize = () => {
@@ -72,8 +72,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => subs.forEach((sub) => sub.remove());
   }, [isVideo, videoPlayer]);
 
-  // Playhead sweeps start → end of the trim box (not the full video, and not
-  // per-frame currentTime — expo-video's jitter there made it shake).
+  // Playhead sweeps start → end of the trim box, not the full video.
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
     const sub = videoPlayer.addListener("playingChange", ({ isPlaying }) => {
@@ -86,20 +85,26 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
         }
       } else {
         cancelAnimation(playheadSV);
-        playheadSV.value = videoPlayer.currentTime;
+        // Eased catch-up (not an instant jump) absorbs drift between the sweep and the real playback clock.
+        if (autoPausedRef.current) {
+          autoPausedRef.current = false;
+          playheadSV.value = withTiming(trimRangeRef.current.end, { duration: 100, easing: Easing.out(Easing.quad) });
+        } else {
+          playheadSV.value = videoPlayer.currentTime;
+        }
       }
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer, videoDuration]);
 
-  // Pauses at the clip end instead of continuing into the discarded footage;
-  // TrimPanel resets currentTime to the clip start before Play resumes it.
+  // Pauses at the clip end; TrimPanel resets currentTime to the start on Play.
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
     videoPlayer.timeUpdateEventInterval = 0.05;
     const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
       const { end } = trimRangeRef.current;
       if (currentTime >= end - 0.05) {
+        autoPausedRef.current = true;
         videoPlayer.pause();
         videoPlayer.currentTime = end;
       }

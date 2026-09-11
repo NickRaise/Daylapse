@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, spacing } from "@/theme";
 
@@ -15,25 +17,41 @@ const HIT_H = 36;
 
 export function VolumePanel({ volume, onVolumeChange }: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
-  const trackWidthRef = useRef(0);
-  trackWidthRef.current = trackWidth;
+  const trackWidthSV = useSharedValue(0);
+  const volumeSV = useSharedValue(volume);
 
-  const fillWidth = volume * trackWidth;
-  const thumbLeft = fillWidth - THUMB / 2;
+  useEffect(() => {
+    volumeSV.value = volume; // stay in sync when volume changes from outside a drag (e.g. the mute tap)
+  }, [volume, volumeSV]);
 
-  function clamp(x: number) {
-    const w = trackWidthRef.current || 1;
-    return Math.max(0, Math.min(1, x / w));
+  function handleLayout(e: { nativeEvent: { layout: { width: number } } }) {
+    setTrackWidth(e.nativeEvent.layout.width);
+    trackWidthSV.value = e.nativeEvent.layout.width;
   }
 
-  // Gesture handler, not the raw responder system — that was getting stolen
-  // by the parent ScrollView, making the slider laggy and jump positions.
+  // Position is driven straight on the UI thread — no JS round trip per frame — so dragging tracks the finger exactly.
   const pan = Gesture.Pan()
-    .runOnJS(true)
     .activeOffsetX([-2, 2])
     .failOffsetY([-10, 10])
-    .onBegin((e) => onVolumeChange(clamp(e.x)))
-    .onUpdate((e) => onVolumeChange(clamp(e.x)));
+    .onBegin((e) => {
+      "worklet";
+      const v = Math.max(0, Math.min(1, e.x / (trackWidthSV.value || 1)));
+      volumeSV.value = v;
+      scheduleOnRN(onVolumeChange, v);
+    })
+    .onUpdate((e) => {
+      "worklet";
+      const v = Math.max(0, Math.min(1, e.x / (trackWidthSV.value || 1)));
+      volumeSV.value = v;
+      scheduleOnRN(onVolumeChange, v);
+    });
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: Math.max(0, volumeSV.value * trackWidthSV.value),
+  }));
+  const thumbStyle = useAnimatedStyle(() => ({
+    left: volumeSV.value * trackWidthSV.value - THUMB / 2,
+  }));
 
   const icon =
     volume === 0 ? "volume-xmark" : volume < 0.5 ? "volume-low" : "volume-high";
@@ -43,18 +61,15 @@ export function VolumePanel({ volume, onVolumeChange }: Props) {
       <Text style={s.subLabel}>Volume</Text>
 
       <View style={s.row}>
-        <FontAwesomeFreeSolid name={icon} size={16} color={colors.textMuted} />
+        <Pressable onPress={() => onVolumeChange(0)} hitSlop={8}>
+          <FontAwesomeFreeSolid name={icon} size={16} color={colors.textMuted} />
+        </Pressable>
 
         <GestureDetector gesture={pan}>
-          <View
-            style={s.hitArea}
-            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-          >
+          <View style={s.hitArea} onLayout={handleLayout}>
             <View style={s.rail} />
-            <View style={[s.fill, { width: Math.max(0, fillWidth) }]} />
-            {trackWidth > 0 && (
-              <View style={[s.thumb, { left: thumbLeft }]} />
-            )}
+            <Animated.View style={[s.fill, fillStyle]} />
+            {trackWidth > 0 && <Animated.View style={[s.thumb, thumbStyle]} />}
           </View>
         </GestureDetector>
 
