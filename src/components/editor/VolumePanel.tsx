@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, spacing } from "@/theme";
 
@@ -14,14 +15,25 @@ const HIT_H = 36;
 
 export function VolumePanel({ volume, onVolumeChange }: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
-  const trackOriginX = useRef(0);
+  const trackWidthRef = useRef(0);
+  trackWidthRef.current = trackWidth;
 
   const fillWidth = volume * trackWidth;
   const thumbLeft = fillWidth - THUMB / 2;
 
   function clamp(x: number) {
-    return Math.max(0, Math.min(1, x / (trackWidth || 1)));
+    const w = trackWidthRef.current || 1;
+    return Math.max(0, Math.min(1, x / w));
   }
+
+  // Gesture handler, not the raw responder system — that was getting stolen
+  // by the parent ScrollView, making the slider laggy and jump positions.
+  const pan = Gesture.Pan()
+    .runOnJS(true)
+    .activeOffsetX([-2, 2])
+    .failOffsetY([-10, 10])
+    .onBegin((e) => onVolumeChange(clamp(e.x)))
+    .onUpdate((e) => onVolumeChange(clamp(e.x)));
 
   const icon =
     volume === 0 ? "volume-xmark" : volume < 0.5 ? "volume-low" : "volume-high";
@@ -33,25 +45,18 @@ export function VolumePanel({ volume, onVolumeChange }: Props) {
       <View style={s.row}>
         <FontAwesomeFreeSolid name={icon} size={16} color={colors.textMuted} />
 
-        <View
-          style={s.hitArea}
-          onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
-          onStartShouldSetResponder={() => true}
-          onMoveShouldSetResponder={() => true}
-          onResponderGrant={(e) => {
-            trackOriginX.current = e.nativeEvent.pageX - e.nativeEvent.locationX;
-            onVolumeChange(clamp(e.nativeEvent.locationX));
-          }}
-          onResponderMove={(e) => {
-            onVolumeChange(clamp(e.nativeEvent.pageX - trackOriginX.current));
-          }}
-        >
-          <View style={s.rail} />
-          <View style={[s.fill, { width: Math.max(0, fillWidth) }]} />
-          {trackWidth > 0 && (
-            <View style={[s.thumb, { left: thumbLeft }]} />
-          )}
-        </View>
+        <GestureDetector gesture={pan}>
+          <View
+            style={s.hitArea}
+            onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+          >
+            <View style={s.rail} />
+            <View style={[s.fill, { width: Math.max(0, fillWidth) }]} />
+            {trackWidth > 0 && (
+              <View style={[s.thumb, { left: thumbLeft }]} />
+            )}
+          </View>
+        </GestureDetector>
 
         <Text style={s.pct}>{Math.round(volume * 100)}%</Text>
       </View>

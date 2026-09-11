@@ -5,7 +5,6 @@ import {
   cancelAnimation,
   Easing,
   useSharedValue,
-  withRepeat,
   withTiming,
 } from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
@@ -57,38 +56,33 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
 
-  // Real pixel dimensions aren't known synchronously for an in-app recording
-  // (recordAsync only returns a uri) — this resolves them shortly after the
-  // player loads the file, so the editor can correct its landscape/portrait
-  // guess once the true orientation is known.
+  // recordAsync only returns a uri, so dimensions resolve after the player loads it.
+  // `sourceLoad` can fire before this subscribes, so also read videoTrack directly.
   useEffect(() => {
     if (!isVideo) return;
-    const sub = videoPlayer.addListener("sourceLoad", (payload) => {
-      const size = payload.availableVideoTracks?.[0]?.size;
+    const readSize = () => {
+      const size = videoPlayer.videoTrack?.size;
       if (size) setVideoSize(size);
-    });
-    return () => sub.remove();
+    };
+    readSize();
+    const subs = [
+      videoPlayer.addListener("sourceLoad", readSize),
+      videoPlayer.addListener("statusChange", readSize),
+    ];
+    return () => subs.forEach((sub) => sub.remove());
   }, [isVideo, videoPlayer]);
 
-  // Playback previews from the clip start through the REST of the video (past
-  // the selection box) so the user can see the footage being cut, then loops
-  // back to the clip start. The playhead is one continuous linear sweep across
-  // that range — it runs on the UI thread and does NOT chase the per-frame
-  // currentTime (expo-video reports it with tiny non-monotonic jitter, and
-  // re-aiming a timing every tick made the needle shake/step backward).
+  // Playhead sweeps start → end of the trim box (not the full video, and not
+  // per-frame currentTime — expo-video's jitter there made it shake).
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
     const sub = videoPlayer.addListener("playingChange", ({ isPlaying }) => {
       if (isPlaying) {
-        const { start } = trimRangeRef.current;
-        const span = Math.max(0, videoDuration - start);
+        const { start, end } = trimRangeRef.current;
+        const span = Math.max(0, end - start);
         playheadSV.value = start;
         if (span > 0) {
-          playheadSV.value = withRepeat(
-            withTiming(videoDuration, { duration: span * 1000, easing: Easing.linear }),
-            -1,
-            false,
-          );
+          playheadSV.value = withTiming(end, { duration: span * 1000, easing: Easing.linear });
         }
       } else {
         cancelAnimation(playheadSV);
@@ -98,14 +92,17 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => sub.remove();
   }, [isVideo, videoPlayer, videoDuration]);
 
-  // Loops playback back to the clip start when it reaches the end of the video.
-  // No shared-value writes here — the needle self-loops via withRepeat above,
-  // on the same (start → end-of-video) period.
+  // Pauses at the clip end instead of continuing into the discarded footage;
+  // TrimPanel resets currentTime to the clip start before Play resumes it.
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
     videoPlayer.timeUpdateEventInterval = 0.05;
     const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
-      if (currentTime >= videoDuration - 0.1) videoPlayer.currentTime = trimRangeRef.current.start;
+      const { end } = trimRangeRef.current;
+      if (currentTime >= end - 0.05) {
+        videoPlayer.pause();
+        videoPlayer.currentTime = end;
+      }
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer, videoDuration]);
