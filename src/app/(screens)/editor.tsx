@@ -32,7 +32,6 @@ import type {
   CaptionStyle,
   DateStampFormat,
   DateStampPosition,
-  DateStampStyle,
 } from "@/types";
 
 type Tab = "trim" | "text";
@@ -51,10 +50,8 @@ export default function EditorScreen() {
   const frameRef = useRef<View>(null);
 
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
-  const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const lastCaptionStyle = useSettingsStore((s) => s.lastCaptionStyle);
-  const lastDateStampStyle = useSettingsStore((s) => s.lastDateStampStyle);
   const lastVolume = useSettingsStore((s) => s.lastVolume);
   const lastDateStampEnabled = useSettingsStore((s) => s.lastDateStampEnabled);
   const lastDateStampPosition = useSettingsStore(
@@ -69,7 +66,6 @@ export default function EditorScreen() {
   const [captionText, setCaptionText] = useState("");
   const [captionStyle, setCaptionStyle] =
     useState<CaptionStyle>(lastCaptionStyle);
-  const [dateStampStyle] = useState<DateStampStyle>(lastDateStampStyle);
   const [fit, setFit] = useState<Fit>(initFit);
   const [volume, setVolume] = useState(lastVolume);
   const [dateStampEnabled, setDateStampEnabled] =
@@ -95,7 +91,6 @@ export default function EditorScreen() {
     frameRef,
     isVideo,
     captionStyle,
-    dateStampStyle,
     volume,
     dateStampEnabled,
     dateStampPosition,
@@ -116,7 +111,9 @@ export default function EditorScreen() {
     (!isVideo || activeTab === "text") && captionText.length > 0;
 
   function handleRetake() {
-    setPendingMedia(null);
+    // Don't clear pendingMedia here — camera.tsx auto-dismisses itself when it
+    // regains focus with pendingMedia null (used after a real Save), which
+    // would skip straight past the camera screen instead of returning to it.
     router.back();
   }
 
@@ -169,8 +166,8 @@ export default function EditorScreen() {
               <DateStampOverlay
                 dateKey={dateKey}
                 format={dateStampFormat}
-                textColor={dateStampStyle.textColor}
-                bgColor={dateStampStyle.bgColor}
+                textColor={captionStyle.textColor}
+                bgColor={captionStyle.bgColor}
               />
             )}
           </MediaFrame>

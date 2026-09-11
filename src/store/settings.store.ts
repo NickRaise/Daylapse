@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { File, Paths } from "expo-file-system";
-import type { AspectRatio, CaptionStyle, DateStampFormat, DateStampPosition, DateStampStyle } from "@/types";
+import type { AspectRatio, CaptionStyle, DateStampFormat, DateStampPosition } from "@/types";
 
 const settingsFile = new File(Paths.document, "app-settings.json");
 
@@ -21,7 +21,6 @@ type Settings = {
   lastDateStampPosition: DateStampPosition;
   lastDateStampFormat: DateStampFormat;
   lastCaptionStyle: CaptionStyle;
-  lastDateStampStyle: DateStampStyle;
   lastVolume: number;
 };
 
@@ -36,7 +35,6 @@ type SettingsState = Settings & {
   setKeepOriginalPhoto: (value: boolean) => Promise<void>;
   setLastEditorPrefs: (prefs: {
     captionStyle: CaptionStyle;
-    dateStampStyle: DateStampStyle;
     volume: number;
     dateStampEnabled: boolean;
     dateStampPosition: DateStampPosition;
@@ -59,10 +57,6 @@ const DEFAULTS: Settings = {
     bgColor: "rgba(0,0,0,0.5)",
     size: "md",
     position: "bottom-left",
-  },
-  lastDateStampStyle: {
-    textColor: "#FFFFFF",
-    bgColor: "rgba(0,0,0,0.45)",
   },
   lastVolume: 1,
 };
@@ -93,7 +87,6 @@ function pickSettings(state: SettingsState): Settings {
     lastDateStampPosition: state.lastDateStampPosition,
     lastDateStampFormat: state.lastDateStampFormat,
     lastCaptionStyle: state.lastCaptionStyle,
-    lastDateStampStyle: state.lastDateStampStyle,
     lastVolume: state.lastVolume,
   };
 }
@@ -137,10 +130,9 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     writeFile({ ...pickSettings(get()), keepOriginalPhoto: value });
   },
 
-  setLastEditorPrefs: async ({ captionStyle, dateStampStyle, volume, dateStampEnabled, dateStampPosition, dateStampFormat }) => {
+  setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled, dateStampPosition, dateStampFormat }) => {
     set({
       lastCaptionStyle: captionStyle,
-      lastDateStampStyle: dateStampStyle,
       lastVolume: volume,
       lastDateStampEnabled: dateStampEnabled,
       lastDateStampPosition: dateStampPosition,
@@ -149,7 +141,6 @@ const useSettingsStore = create<SettingsState>((set, get) => ({
     writeFile({
       ...pickSettings(get()),
       lastCaptionStyle: captionStyle,
-      lastDateStampStyle: dateStampStyle,
       lastVolume: volume,
       lastDateStampEnabled: dateStampEnabled,
       lastDateStampPosition: dateStampPosition,

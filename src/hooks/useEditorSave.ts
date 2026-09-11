@@ -12,14 +12,12 @@ import type {
   CaptionStyle,
   DateStampFormat,
   DateStampPosition,
-  DateStampStyle,
 } from "@/types";
 
 type Options = {
   frameRef: React.RefObject<View | null>;
   isVideo: boolean;
   captionStyle: CaptionStyle;
-  dateStampStyle: DateStampStyle;
   volume: number;
   dateStampEnabled: boolean;
   dateStampPosition: DateStampPosition;
@@ -36,7 +34,6 @@ export function useEditorSave({
   frameRef,
   isVideo,
   captionStyle,
-  dateStampStyle,
   volume,
   dateStampEnabled,
   dateStampPosition,
@@ -91,7 +88,6 @@ export function useEditorSave({
 
       await setLastEditorPrefs({
         captionStyle,
-        dateStampStyle,
         volume,
         dateStampEnabled,
         dateStampPosition,
