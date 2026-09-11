@@ -55,7 +55,12 @@ export default function Camera() {
       const asset = result.assets[0];
       if (asset) {
         sentToEditorRef.current = true;
-        setPendingMedia({ uri: asset.uri, type: asset.type === "video" ? "video" : "photo" });
+        setPendingMedia({
+          uri: asset.uri,
+          type: asset.type === "video" ? "video" : "photo",
+          width: asset.width,
+          height: asset.height,
+        });
         router.push("/editor");
       }
     });
@@ -75,9 +80,14 @@ export default function Camera() {
 
   // ── Capture handlers ──────────────────────────────────────────────────────
 
-  function openEditor(uri: string, type: "photo" | "video", isLoading = false) {
+  function openEditor(
+    uri: string,
+    type: "photo" | "video",
+    isLoading = false,
+    dims?: { width: number; height: number },
+  ) {
     sentToEditorRef.current = true;
-    setPendingMedia({ uri, type, isLoading });
+    setPendingMedia({ uri, type, isLoading, ...dims });
     router.push("/editor");
   }
 
@@ -87,8 +97,11 @@ export default function Camera() {
     if (mode === "picture") {
       setIsBusy(true);
       try {
-        const photo = await cameraRef.current.takePictureAsync({ quality: PHOTO_QUALITY[videoQuality] });
-        openEditor(photo.uri, "photo");
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: PHOTO_QUALITY[videoQuality],
+          shutterSound: false,
+        });
+        openEditor(photo.uri, "photo", false, { width: photo.width, height: photo.height });
       } finally {
         setIsBusy(false);
       }
@@ -169,7 +182,10 @@ export default function Camera() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images", "videos"] });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      openEditor(asset.uri, asset.type === "video" ? "video" : "photo");
+      openEditor(asset.uri, asset.type === "video" ? "video" : "photo", false, {
+        width: asset.width,
+        height: asset.height,
+      });
     }
   }
 
@@ -181,7 +197,10 @@ export default function Camera() {
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      openEditor(asset.uri, asset.type === "video" ? "video" : "photo");
+      openEditor(asset.uri, asset.type === "video" ? "video" : "photo", false, {
+        width: asset.width,
+        height: asset.height,
+      });
     }
   }
 

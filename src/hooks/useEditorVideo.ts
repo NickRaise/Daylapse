@@ -20,6 +20,7 @@ type Options = {
 type Result = {
   videoPlayer: VideoPlayer;
   videoDuration: number;
+  videoSize: { width: number; height: number } | null;
   playheadSV: SharedValue<number>;
   trimRangeRef: React.MutableRefObject<TrimRange>;
   setTrimRange: (r: TrimRange) => void;
@@ -35,6 +36,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
   );
 
   const [videoDuration, setVideoDuration] = useState(0);
+  const [videoSize, setVideoSize] = useState<{ width: number; height: number } | null>(null);
   const playheadSV = useSharedValue(0);
   const trimRangeRef = useRef<TrimRange>({ start: 0, end: 0 });
 
@@ -51,6 +53,19 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     const sub = videoPlayer.addListener("statusChange", () => {
       const d = videoPlayer.duration;
       if (d > 0) setVideoDuration(d);
+    });
+    return () => sub.remove();
+  }, [isVideo, videoPlayer]);
+
+  // Real pixel dimensions aren't known synchronously for an in-app recording
+  // (recordAsync only returns a uri) — this resolves them shortly after the
+  // player loads the file, so the editor can correct its landscape/portrait
+  // guess once the true orientation is known.
+  useEffect(() => {
+    if (!isVideo) return;
+    const sub = videoPlayer.addListener("sourceLoad", (payload) => {
+      const size = payload.availableVideoTracks?.[0]?.size;
+      if (size) setVideoSize(size);
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
@@ -98,6 +113,7 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
   return {
     videoPlayer,
     videoDuration,
+    videoSize,
     playheadSV,
     trimRangeRef,
     setTrimRange,

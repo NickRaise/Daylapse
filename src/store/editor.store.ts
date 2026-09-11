@@ -4,6 +4,9 @@ export type EditorMedia = {
   uri: string;
   type: "photo" | "video";
   isLoading?: boolean;
+  /** Real pixel dimensions of the captured/picked media, when known up front (see camera.tsx). */
+  width?: number;
+  height?: number;
 };
 
 type EditorState = {

@@ -60,7 +60,17 @@ export default function EditorScreen() {
   const lastDateStampFormat = useSettingsStore((s) => s.lastDateStampFormat);
 
   const isVideo = pendingMedia?.type === "video";
-  const initFit: Fit = defaultAspectRatio === "9:16" ? "portrait" : "landscape";
+  // Prefer the actual captured orientation over the aspect-ratio setting —
+  // a landscape photo/video should open in Landscape fit regardless of what
+  // frame shape the user last had selected, and vice versa.
+  const capturedFit: Fit | null =
+    pendingMedia?.width && pendingMedia?.height
+      ? pendingMedia.width > pendingMedia.height
+        ? "landscape"
+        : "portrait"
+      : null;
+  const initFit: Fit =
+    capturedFit ?? (defaultAspectRatio === "9:16" ? "portrait" : "landscape");
 
   const [activeTab, setActiveTab] = useState<Tab>("trim");
   const [captionText, setCaptionText] = useState("");
@@ -75,10 +85,12 @@ export default function EditorScreen() {
   );
   const [dateStampFormat] = useState<DateStampFormat>(lastDateStampFormat);
   const [captionResetToken, setCaptionResetToken] = useState(0);
+  const userToggledFitRef = useRef(false);
 
   const {
     videoPlayer,
     videoDuration,
+    videoSize,
     playheadSV,
     setTrimRange,
   } = useEditorVideo({
@@ -86,6 +98,14 @@ export default function EditorScreen() {
     mediaUri: isVideo && !pendingMedia?.isLoading ? pendingMedia!.uri : null,
     volume,
   });
+
+  // An in-app recording has no known dimensions up front (recordAsync only
+  // returns a uri) — once the player resolves the real size, correct the
+  // landscape/portrait guess, unless the user has since toggled it manually.
+  useEffect(() => {
+    if (!isVideo || !videoSize || capturedFit || userToggledFitRef.current) return;
+    setFit(videoSize.width > videoSize.height ? "landscape" : "portrait");
+  }, [isVideo, videoSize, capturedFit]);
 
   const { handleSave, isSaving } = useEditorSave({
     frameRef,
@@ -137,9 +157,10 @@ export default function EditorScreen() {
         <EditorHeader
           fit={fit}
           onBack={handleRetake}
-          onToggleFit={() =>
-            setFit((f) => (f === "landscape" ? "portrait" : "landscape"))
-          }
+          onToggleFit={() => {
+            userToggledFitRef.current = true;
+            setFit((f) => (f === "landscape" ? "portrait" : "landscape"));
+          }}
         />
 
         <View style={s.frameWrap}>
