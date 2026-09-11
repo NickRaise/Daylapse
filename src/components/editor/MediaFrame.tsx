@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { type VideoPlayer, VideoView } from "expo-video";
-import { colors, radius } from "@/theme";
+import { radius } from "@/theme";
 import type { AspectRatio } from "@/types";
 import type { EditorMedia } from "@/store/editor.store";
 

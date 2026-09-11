@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -76,14 +77,13 @@ export default function EditorScreen() {
     lastDateStampPosition,
   );
   const [dateStampFormat] = useState<DateStampFormat>(lastDateStampFormat);
+  const [captionResetToken, setCaptionResetToken] = useState(0);
 
   const {
     videoPlayer,
     videoDuration,
-    playheadTime,
     playheadSV,
     setTrimRange,
-    handleSeek,
   } = useEditorVideo({
     isVideo,
     mediaUri: isVideo && !pendingMedia?.isLoading ? pendingMedia!.uri : null,
@@ -111,7 +111,8 @@ export default function EditorScreen() {
     screenW,
   );
   const dateKey = todayDateKey();
-  const captionDragMode = activeTab === "text" && captionText.length > 0;
+  const captionDragMode =
+    (!isVideo || activeTab === "text") && captionText.length > 0;
 
   function handleRetake() {
     setPendingMedia(null);
@@ -161,6 +162,7 @@ export default function EditorScreen() {
               size={captionStyle.size}
               position={captionStyle.position}
               draggable={captionDragMode}
+              resetSignal={captionResetToken}
             />
             {dateStampEnabled && (
               <DateStampOverlay
@@ -172,9 +174,15 @@ export default function EditorScreen() {
             )}
           </MediaFrame>
 
-          {captionDragMode && (
+          <View
+            style={[s.dragHintRow, !captionDragMode && s.dragHintHidden]}
+            pointerEvents={captionDragMode ? "auto" : "none"}
+          >
             <Text style={s.dragHint}>Drag the text to reposition</Text>
-          )}
+            <Pressable onPress={() => setCaptionResetToken((n) => n + 1)} hitSlop={8}>
+              <Text style={s.resetLink}>Reset position</Text>
+            </Pressable>
+          </View>
         </View>
 
         {isVideo && (
@@ -198,9 +206,7 @@ export default function EditorScreen() {
                 player={videoPlayer}
                 duration={videoDuration}
                 onRangeChange={setTrimRange}
-                playhead={playheadTime}
                 playheadSV={playheadSV}
-                onSeek={handleSeek}
               />
               <View style={s.panelDivider} />
               <VolumePanel volume={volume} onVolumeChange={setVolume} />
@@ -245,10 +251,26 @@ const s = StyleSheet.create({
     paddingHorizontal: H_PAD,
     gap: 6,
   },
+  dragHintRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    gap: spacing[3],
+  },
   dragHint: {
     fontSize: fontSize.xs,
     color: colors.primary,
     fontStyle: "italic",
+  },
+  resetLink: {
+    fontSize: fontSize.xs,
+    color: colors.primary,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+  },
+  dragHintHidden: {
+    opacity: 0,
   },
 
   panelScroll: { flex: 1 },

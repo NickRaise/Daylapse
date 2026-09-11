@@ -5,7 +5,7 @@ import { Image } from "expo-image";
 import Animated, { type SharedValue } from "react-native-reanimated";
 import type { VideoPlayer } from "expo-video";
 import { colors } from "@/theme";
-import { useClipBlock } from "@/hooks/useClipBlock";
+import { useClipTrim } from "@/hooks/useClipTrim";
 import { useThumbnails, THUMB_COUNT } from "@/hooks/useThumbnails";
 import { TrimControls } from "@/components/editor/TrimControls";
 import { ClipDurationPicker } from "@/components/editor/ClipDurationPicker";
@@ -21,9 +21,7 @@ type Props = {
   player: VideoPlayer;
   duration: number;
   onRangeChange: (r: TrimRange) => void;
-  playhead: number;
   playheadSV: SharedValue<number>;
-  onSeek: (time: number) => void;
 };
 
 export function TrimPanel({
@@ -31,9 +29,7 @@ export function TrimPanel({
   player,
   duration,
   onRangeChange,
-  playhead,
   playheadSV,
-  onSeek,
 }: Props) {
   const [viewportW, setViewportW] = useState(0);
   const [isPlaying, setIsPlaying] = useState(player.playing);
@@ -42,29 +38,21 @@ export function TrimPanel({
   const dur = Math.max(duration, 0.001);
 
   const {
-    scrollEnabled,
-    clipStartRef,
     safeClipDur,
-    contentWidth,
-    applyClipDuration,
+    stripW,
+    scrollEnabled,
     blockPan,
-    reelTap,
+    applyClipDuration,
     stepBlock,
+    clipStartRef,
+    blockStyle,
     dimLeftStyle,
     dimRightStyle,
-    blockStyle,
     needleStyle,
-  } = useClipBlock({ dur, viewportW, player, playheadSV, scrollRef, onRangeChange, onSeek });
+  } = useClipTrim({ dur, viewportW, player, playheadSV, scrollRef, onRangeChange });
 
   const { thumbUris } = useThumbnails(videoUri, duration, viewportW);
-  const thumbW = contentWidth > 0 ? contentWidth / THUMB_COUNT : 0;
-
-  // Scroll auto-follow: keep needle visible during playback.
-  useEffect(() => {
-    if (!scrollRef.current || contentWidth <= viewportW || !isPlaying) return;
-    const nx = (playhead / dur) * contentWidth;
-    scrollRef.current.scrollTo({ x: Math.max(0, nx - viewportW * 0.35), animated: false });
-  }, [playhead, contentWidth, isPlaying]);
+  const thumbW = stripW > 0 ? stripW / THUMB_COUNT : 0;
 
   useEffect(() => {
     setIsPlaying(player.playing);
@@ -77,7 +65,7 @@ export function TrimPanel({
 
       <TrimControls
         isPlaying={isPlaying}
-        playhead={playhead}
+        playheadSV={playheadSV}
         duration={duration}
         onPlay={() => { player.currentTime = clipStartRef.current; player.play(); }}
         onPause={() => player.pause()}
@@ -97,46 +85,44 @@ export function TrimPanel({
           bounces={false}
           style={StyleSheet.absoluteFill}
         >
-          <GestureDetector gesture={reelTap}>
-            <View style={{ width: contentWidth, height: STRIP_H }}>
+          <View style={{ width: stripW, height: STRIP_H }}>
 
-              {/* Thumbnails + dim overlays */}
-              <View style={[s.strip, { width: contentWidth }]} pointerEvents="none">
-                <View style={s.thumbRow}>
-                  {thumbUris.length > 0
-                    ? thumbUris.map((uri, i) => (
-                        <Image
-                          key={i}
-                          source={{ uri }}
-                          style={{ width: thumbW, height: STRIP_H }}
-                          contentFit="cover"
-                        />
-                      ))
-                    : Array.from({ length: THUMB_COUNT }).map((_, i) => (
-                        <View key={i} style={[s.thumbPlaceholder, { width: thumbW }]} />
-                      ))}
-                </View>
-                <Animated.View style={[s.dim, s.dimLeft, dimLeftStyle]} />
-                <Animated.View style={[s.dim, s.dimRight, dimRightStyle]} />
+            {/* Thumbnails + dim masks (both sides of the selection) */}
+            <View style={[s.strip, { width: stripW }]} pointerEvents="none">
+              <View style={s.thumbRow}>
+                {thumbUris.length > 0
+                  ? thumbUris.map((uri, i) => (
+                      <Image
+                        key={i}
+                        source={{ uri }}
+                        style={{ width: thumbW, height: STRIP_H }}
+                        contentFit="cover"
+                      />
+                    ))
+                  : Array.from({ length: THUMB_COUNT }).map((_, i) => (
+                      <View key={i} style={[s.thumbPlaceholder, { width: thumbW }]} />
+                    ))}
               </View>
-
-              {/* Draggable clip block */}
-              {contentWidth > 0 && (
-                <GestureDetector gesture={blockPan}>
-                  <Animated.View style={[s.block, blockStyle]}>
-                    <View style={[s.bracket, s.bracketLeft]} />
-                    <View style={[s.bracket, s.bracketRight]} />
-                    <View style={s.blockBorderTop} />
-                    <View style={s.blockBorderBottom} />
-                  </Animated.View>
-                </GestureDetector>
-              )}
-
-              {/* Playhead needle — driven by shared value, zero React re-renders */}
-              <Animated.View style={[s.needle, needleStyle]} pointerEvents="none" />
-
+              <Animated.View style={[s.dim, dimLeftStyle]} />
+              <Animated.View style={[s.dim, dimRightStyle]} />
             </View>
-          </GestureDetector>
+
+            {/* Draggable clip block */}
+            {stripW > 0 && (
+              <GestureDetector gesture={blockPan}>
+                <Animated.View style={[s.block, blockStyle]}>
+                  <View style={[s.bracket, s.bracketLeft]} />
+                  <View style={[s.bracket, s.bracketRight]} />
+                  <View style={s.blockBorderTop} />
+                  <View style={s.blockBorderBottom} />
+                </Animated.View>
+              </GestureDetector>
+            )}
+
+            {/* Playhead — sweeps across the whole strip (past the block) during playback */}
+            <Animated.View style={[s.needle, needleStyle]} pointerEvents="none" />
+
+          </View>
         </ScrollView>
       </View>
 
@@ -178,14 +164,12 @@ const s = StyleSheet.create({
     height: STRIP_H,
     backgroundColor: "rgba(0,0,0,0.6)",
   },
-  dimLeft:  { left: 0 },
-  dimRight: { right: 0 },
 
   block: {
     position: "absolute",
     top: 0,
     height: STRIP_H,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.06)",
     overflow: "visible",
   },
   bracket: {

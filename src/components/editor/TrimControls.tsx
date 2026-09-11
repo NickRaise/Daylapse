@@ -1,11 +1,54 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import Animated, {
+  useAnimatedProps,
+  type SharedValue,
+} from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, spacing } from "@/theme";
 import { fmt } from "@/utils/time";
 
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
+// Worklet copy of fmt() so the clock can format on the UI thread.
+function fmtClock(s: number) {
+  "worklet";
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toFixed(1).padStart(4, "0")}`;
+}
+
+const HOLD_DELAY = 350; // ms held before continuous stepping kicks in
+const HOLD_INTERVAL = 70; // ms between steps while held
+
+// A tap fires one small nudge; holding past HOLD_DELAY repeats it smoothly
+// until release, so the user can dial in a precise trim start/end.
+function useHoldToRepeat(callback: () => void) {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  function stop() {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    timeoutRef.current = null;
+    intervalRef.current = null;
+  }
+
+  function start() {
+    callback();
+    timeoutRef.current = setTimeout(() => {
+      intervalRef.current = setInterval(callback, HOLD_INTERVAL);
+    }, HOLD_DELAY);
+  }
+
+  useEffect(() => stop, []);
+
+  return { start, stop };
+}
+
 type Props = {
   isPlaying: boolean;
-  playhead: number;
+  playheadSV: SharedValue<number>;
   duration: number;
   onPlay: () => void;
   onPause: () => void;
@@ -15,19 +58,33 @@ type Props = {
 
 export function TrimControls({
   isPlaying,
-  playhead,
+  playheadSV,
   duration,
   onPlay,
   onPause,
   onStepBack,
   onStepForward,
 }: Props) {
+  const stepBack = useHoldToRepeat(onStepBack);
+  const stepForward = useHoldToRepeat(onStepForward);
+
+  // Clock updates on the UI thread from the shared value — scrubbing and
+  // playback drive it with zero React re-renders of the editor tree.
+  const clockProps = useAnimatedProps(
+    () => ({ text: fmtClock(playheadSV.value) }) as any,
+  );
+
   return (
     <View style={s.controls}>
       <View style={s.controlsSide} />
 
       <View style={s.btnGroup}>
-        <Pressable style={s.stepBtn} hitSlop={12} onPress={onStepBack}>
+        <Pressable
+          style={s.stepBtn}
+          hitSlop={12}
+          onPressIn={stepBack.start}
+          onPressOut={stepBack.stop}
+        >
           <FontAwesomeFreeSolid name="backward-step" size={13} color={colors.textSecondary} />
         </Pressable>
 
@@ -39,17 +96,28 @@ export function TrimControls({
           />
         </Pressable>
 
-        <Pressable style={s.stepBtn} hitSlop={12} onPress={onStepForward}>
+        <Pressable
+          style={s.stepBtn}
+          hitSlop={12}
+          onPressIn={stepForward.start}
+          onPressOut={stepForward.stop}
+        >
           <FontAwesomeFreeSolid name="forward-step" size={13} color={colors.textSecondary} />
         </Pressable>
       </View>
 
       <View style={s.controlsSide}>
-        <Text style={s.timeDisplay}>
-          {fmt(playhead)}
-          <Text style={s.timeSep}> / </Text>
-          {fmt(duration)}
-        </Text>
+        <View style={s.timeRow}>
+          <AnimatedTextInput
+            style={[s.timeDisplay, s.timeInput]}
+            editable={false}
+            underlineColorAndroid="transparent"
+            scrollEnabled={false}
+            defaultValue={fmt(0)}
+            animatedProps={clockProps}
+          />
+          <Text style={[s.timeDisplay, s.timeSep]}> / {fmt(duration)}</Text>
+        </View>
       </View>
     </View>
   );
@@ -82,10 +150,18 @@ const s = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
+  timeRow: { flexDirection: "row", alignItems: "center" },
   timeDisplay: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     fontVariant: ["tabular-nums"],
+  },
+  timeInput: {
+    padding: 0,
+    margin: 0,
+    minWidth: 46,
+    textAlign: "right",
+    includeFontPadding: false,
   },
   timeSep: { color: colors.textMuted },
 });

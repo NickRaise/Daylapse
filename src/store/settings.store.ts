@@ -58,7 +58,7 @@ const DEFAULTS: Settings = {
     textColor: "#FFFFFF",
     bgColor: "rgba(0,0,0,0.5)",
     size: "md",
-    position: "bottom-center",
+    position: "bottom-left",
   },
   lastDateStampStyle: {
     textColor: "#FFFFFF",

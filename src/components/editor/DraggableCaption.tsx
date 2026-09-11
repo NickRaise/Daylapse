@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { colors } from "@/theme";
 import type { CaptionPosition, CaptionSize } from "@/types";
 
 const SIZE_FONT: Record<CaptionSize, number> = { sm: 12, md: 16, lg: 22 };
 const MARGIN = 24;
 
-function presetToCoords(pos: CaptionPosition, fw: number, fh: number) {
+// Computed straight from the current (possibly still-settling) measured size,
+// in the same render pass — no follow-up "correction" render, so growing text
+// never flashes at the wrong spot before snapping into place.
+function presetLeftTop(
+  pos: CaptionPosition,
+  fw: number,
+  fh: number,
+  w: number,
+  h: number,
+) {
   const parts = pos.split("-");
   const vert  = parts[0];
   const horiz = parts.length > 1 ? parts[1] : "center";
-  const x = horiz === "left" ? MARGIN : horiz === "right" ? fw - MARGIN : fw / 2;
-  const y = vert  === "top"  ? MARGIN : vert  === "bottom" ? fh - MARGIN : fh / 2;
-  return { x, y };
+  const left = horiz === "left" ? MARGIN : horiz === "right" ? fw - MARGIN - w : (fw - w) / 2;
+  const top  = vert  === "top"  ? MARGIN : vert  === "bottom" ? fh - MARGIN - h : (fh - h) / 2;
+  return { left, top };
 }
 
 type Props = {
@@ -24,6 +32,8 @@ type Props = {
   size?: CaptionSize;
   position?: CaptionPosition;
   draggable?: boolean;
+  /** Bump this (e.g. a counter) to snap the caption back to its preset position. */
+  resetSignal?: number;
 };
 
 export function DraggableCaption({
@@ -35,34 +45,27 @@ export function DraggableCaption({
   size = "md",
   position = "bottom-center",
   draggable = true,
+  resetSignal,
 }: Props) {
-  const [pos, setPos] = useState(() =>
-    presetToCoords(position, frameWidth, frameHeight),
-  );
-  const drag = useRef({ startTX: 0, startTY: 0, initX: 0, initY: 0 });
   const [measured, setMeasured] = useState({ w: 0, h: 0 });
+  // null while following the preset corner; set once the user drags it free.
+  const [dragPos, setDragPos] = useState<{ left: number; top: number } | null>(null);
+  const drag = useRef({ startTX: 0, startTY: 0, initLeft: 0, initTop: 0 });
 
-  // Snap to preset when user picks a new position
+  // Snap back to following the preset when the user picks a new one, or
+  // resetSignal is bumped (e.g. from a "reset position" button).
   useEffect(() => {
-    setPos(presetToCoords(position, frameWidth, frameHeight));
-  }, [position, frameWidth, frameHeight]);
+    setDragPos(null);
+  }, [position, frameWidth, frameHeight, resetSignal]);
 
   if (!text) return null;
 
-  const halfW = measured.w / 2;
-  const halfH = measured.h / 2;
+  const { left, top } =
+    dragPos ?? presetLeftTop(position, frameWidth, frameHeight, measured.w, measured.h);
 
   return (
     <View
-      style={[
-        s.wrapper,
-        {
-          position: "absolute",
-          left: pos.x - halfW,
-          top: pos.y - halfH,
-          backgroundColor: bgColor,
-        },
-      ]}
+      style={[s.wrapper, { position: "absolute", left, top, backgroundColor: bgColor }]}
       onLayout={(e) => {
         setMeasured({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
       }}
@@ -72,23 +75,22 @@ export function DraggableCaption({
         drag.current = {
           startTX: e.nativeEvent.pageX,
           startTY: e.nativeEvent.pageY,
-          initX: pos.x,
-          initY: pos.y,
+          initLeft: left,
+          initTop: top,
         };
       }}
       onResponderMove={(e) => {
         const dx = e.nativeEvent.pageX - drag.current.startTX;
         const dy = e.nativeEvent.pageY - drag.current.startTY;
-        setPos({
-          x: Math.max(halfW, Math.min(frameWidth - halfW, drag.current.initX + dx)),
-          y: Math.max(halfH, Math.min(frameHeight - halfH, drag.current.initY + dy)),
+        setDragPos({
+          left: Math.max(0, Math.min(frameWidth - measured.w, drag.current.initLeft + dx)),
+          top: Math.max(0, Math.min(frameHeight - measured.h, drag.current.initTop + dy)),
         });
       }}
     >
       <Text style={[s.text, { color: textColor, fontSize: SIZE_FONT[size] }]}>
         {text}
       </Text>
-      {draggable && <View style={s.dragHint} pointerEvents="none" />}
     </View>
   );
 }
@@ -101,13 +103,5 @@ const s = StyleSheet.create({
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
-  },
-  dragHint: {
-    position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: colors.primary,
-    borderStyle: "dashed",
   },
 });

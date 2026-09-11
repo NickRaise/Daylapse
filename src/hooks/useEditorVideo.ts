@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVideoPlayer } from "expo-video";
 import type { VideoPlayer } from "expo-video";
-import { useSharedValue, withTiming } from "react-native-reanimated";
+import {
+  cancelAnimation,
+  Easing,
+  useSharedValue,
+  withRepeat,
+  withTiming,
+} from "react-native-reanimated";
 import type { SharedValue } from "react-native-reanimated";
 import type { TrimRange } from "@/components/editor/TrimPanel";
 
@@ -14,11 +20,9 @@ type Options = {
 type Result = {
   videoPlayer: VideoPlayer;
   videoDuration: number;
-  playheadTime: number;
   playheadSV: SharedValue<number>;
   trimRangeRef: React.MutableRefObject<TrimRange>;
   setTrimRange: (r: TrimRange) => void;
-  handleSeek: (t: number) => void;
 };
 
 export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
@@ -31,7 +35,6 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
   );
 
   const [videoDuration, setVideoDuration] = useState(0);
-  const [playheadTime, setPlayheadTime] = useState(0);
   const playheadSV = useSharedValue(0);
   const trimRangeRef = useRef<TrimRange>({ start: 0, end: 0 });
 
@@ -52,35 +55,51 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
 
-  // Feeds playhead into the needle (shared value, UI thread) and timestamp
-  // display (React state, throttled to ~10 fps to avoid excess re-renders).
+  // Playback previews from the clip start through the REST of the video (past
+  // the selection box) so the user can see the footage being cut, then loops
+  // back to the clip start. The playhead is one continuous linear sweep across
+  // that range — it runs on the UI thread and does NOT chase the per-frame
+  // currentTime (expo-video reports it with tiny non-monotonic jitter, and
+  // re-aiming a timing every tick made the needle shake/step backward).
   useEffect(() => {
     if (!isVideo || !videoDuration) return;
-    videoPlayer.timeUpdateEventInterval = 0.05;
-    let lastDisplayT = -1;
-    const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
-      playheadSV.value = withTiming(currentTime, { duration: 80 });
-      if (Math.abs(currentTime - lastDisplayT) >= 0.1) {
-        lastDisplayT = currentTime;
-        setPlayheadTime(currentTime);
+    const sub = videoPlayer.addListener("playingChange", ({ isPlaying }) => {
+      if (isPlaying) {
+        const { start } = trimRangeRef.current;
+        const span = Math.max(0, videoDuration - start);
+        playheadSV.value = start;
+        if (span > 0) {
+          playheadSV.value = withRepeat(
+            withTiming(videoDuration, { duration: span * 1000, easing: Easing.linear }),
+            -1,
+            false,
+          );
+        }
+      } else {
+        cancelAnimation(playheadSV);
+        playheadSV.value = videoPlayer.currentTime;
       }
     });
     return () => sub.remove();
   }, [isVideo, videoPlayer, videoDuration]);
 
-  // Instant seek: bypass withTiming so the needle jumps on drag/tap/step.
-  const handleSeek = useCallback((t: number) => {
-    playheadSV.value = t;
-    setPlayheadTime(t);
-  }, []);
+  // Loops playback back to the clip start when it reaches the end of the video.
+  // No shared-value writes here — the needle self-loops via withRepeat above,
+  // on the same (start → end-of-video) period.
+  useEffect(() => {
+    if (!isVideo || !videoDuration) return;
+    videoPlayer.timeUpdateEventInterval = 0.05;
+    const sub = videoPlayer.addListener("timeUpdate", ({ currentTime }) => {
+      if (currentTime >= videoDuration - 0.1) videoPlayer.currentTime = trimRangeRef.current.start;
+    });
+    return () => sub.remove();
+  }, [isVideo, videoPlayer, videoDuration]);
 
   return {
     videoPlayer,
     videoDuration,
-    playheadTime,
     playheadSV,
     trimRangeRef,
     setTrimRange,
-    handleSeek,
   };
 }

@@ -67,7 +67,11 @@
       ],
       "expo-sqlite",
       "expo-video",
-      ["expo-file-system"]
+      [
+        "expo-file-system"
+      ],
+      "expo-image",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
