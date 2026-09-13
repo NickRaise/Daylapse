@@ -22,14 +22,18 @@ async function photoToClip(uri: string, seconds: number): Promise<string> {
   const { FFmpegKit, ReturnCode } = require("@mtd1410/react-native-ffmpegkit") as typeof import("@mtd1410/react-native-ffmpegkit");
   const outPath = `${toFsPath(montageDir.uri)}/clip-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`;
   const command =
-    `-y -loop 1 -t ${seconds} -i "${toFsPath(uri)}" ` +
-    `-c:v libx264 -pix_fmt yuv420p -r 30 ` +
+    // libx264 is GPL-only and absent from the "https" FFmpegKit package this app ships — h264_mediacodec is the OS's own hardware encoder, available regardless of package variant.
+    // A silent audio track is added because react-native-video-trim's merge() assumes every clip has both video and audio streams.
+    `-y -loop 1 -i "${toFsPath(uri)}" -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=48000" ` +
+    `-map 0:v:0 -map 1:a:0 -c:v h264_mediacodec -c:a aac -t ${seconds} -pix_fmt yuv420p -r 30 ` +
     `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black" ` +
+    `-shortest ` +
     `"${outPath}"`;
   const session = await FFmpegKit.execute(command);
   const rc = await session.getReturnCode();
   if (!ReturnCode.isSuccess(rc)) {
-    throw new Error(`photo-to-video failed for ${uri}`);
+    const logs = await session.getAllLogsAsString();
+    throw new Error(`photo-to-video failed for ${uri} (rc=${rc}): ${logs.slice(-800)}`);
   }
   return outPath;
 }

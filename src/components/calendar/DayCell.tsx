@@ -1,7 +1,8 @@
 import { memo } from "react";
-import { Text, Pressable, StyleSheet, ImageBackground, View } from "react-native";
+import { Text, Pressable, StyleSheet, View } from "react-native";
 import { CELL_SIZE } from "./layout";
 import { colors, radius } from "../../theme";
+import { MediaThumbnail, type MediaKind } from "../media/MediaThumbnail";
 
 type DayCellProps = {
   day: number;
@@ -11,6 +12,7 @@ type DayCellProps = {
   isFuture: boolean;
   hasEntry: boolean;
   thumbnailUri?: string;
+  thumbnailType?: MediaKind;
   onPress: (dateKey: string) => void;
 };
 
@@ -22,9 +24,10 @@ const DayCell = memo(function DayCell({
   isFuture,
   hasEntry,
   thumbnailUri,
+  thumbnailType,
   onPress,
 }: DayCellProps) {
-  const hasThumbnail = !!thumbnailUri && !isFuture && !isToday;
+  const hasThumbnail = !!thumbnailUri && !isFuture;
 
   const cellStyle = [
     styles.cell,
@@ -38,20 +41,17 @@ const DayCell = memo(function DayCell({
   if (hasThumbnail) {
     return (
       <Pressable
-        style={cellStyle}
+        style={[styles.cell, isToday && styles.todayRing]}
         onPress={() => onPress(dateKey)}
         android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
       >
-        <ImageBackground
-          source={{ uri: thumbnailUri }}
-          style={styles.thumbBg}
-          resizeMode="cover"
-        >
+        <MediaThumbnail uri={thumbnailUri as string} type={thumbnailType ?? "image"} />
+        <View style={styles.thumbOverlay}>
           <View style={styles.sketchLabel}>
             <Text style={styles.sketchNum}>{day}</Text>
             <Text style={styles.sketchWeekday}>{weekdayAbbr}</Text>
           </View>
-        </ImageBackground>
+        </View>
       </Pressable>
     );
   }
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
   pastCell: { backgroundColor: colors.bgSurface },
   todayCell: { backgroundColor: colors.primary },
   futureCell: { backgroundColor: colors.bgSubtle },
+  todayRing: { borderWidth: 2.5, borderColor: colors.primary },
 
   // ── Plain cell text ───────────────────────────────────────────────────────
   dayNum: {
@@ -135,9 +136,8 @@ const styles = StyleSheet.create({
   },
 
   // ── Thumbnail cell ────────────────────────────────────────────────────────
-  thumbBg: {
-    width: CELL_SIZE,
-    height: CELL_SIZE,
+  thumbOverlay: {
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "flex-end",
     paddingBottom: CELL_SIZE * 0.1,

@@ -1,19 +1,24 @@
 import { useState } from "react";
 import { View } from "react-native";
+import { Paths } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library/legacy";
 import { captureRef } from "react-native-view-shot";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
+import { burnOverlayOntoVideo } from "@/service/videoBurn";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
 import useSettingsStore from "@/store/settings.store";
-import { toFileUri } from "@/utils/fileUri";
+import { toFileUri, toFsPath } from "@/utils/fileUri";
 import type { CaptionStyle } from "@/types";
 import type { TrimRange } from "@/components/editor/TrimPanel";
 
 type Options = {
   frameRef: React.RefObject<View | null>;
+  burnOverlayRef: React.RefObject<View | null>;
   isVideo: boolean;
+  hasOverlay: boolean;
+  videoSize: { width: number; height: number } | null;
   captionStyle: CaptionStyle;
   volume: number;
   dateStampEnabled: boolean;
@@ -30,7 +35,10 @@ type Result = {
 
 export function useEditorSave({
   frameRef,
+  burnOverlayRef,
   isVideo,
+  hasOverlay,
+  videoSize,
   captionStyle,
   volume,
   dateStampEnabled,
@@ -43,7 +51,7 @@ export function useEditorSave({
   const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
   const currentEntryId = useEntryStore((s) => s.currentId);
   const saveToGallery = useSettingsStore((s) => s.saveToGallery);
-  const keepOriginalPhoto = useSettingsStore((s) => s.keepOriginalPhoto);
+  const keepOriginalMedia = useSettingsStore((s) => s.keepOriginalMedia);
   const setLastEditorPrefs = useSettingsStore((s) => s.setLastEditorPrefs);
 
   const [isSaving, setIsSaving] = useState(false);
@@ -69,17 +77,39 @@ export function useEditorSave({
     }
   }
 
+  // Burns the currently-rendered caption/date-stamp overlay onto the video at its native resolution.
+  async function burnIfNeeded(uri: string): Promise<string> {
+    if (!hasOverlay || !videoSize) return uri;
+    try {
+      const overlayPng = await captureRef(burnOverlayRef, {
+        format: "png",
+        result: "tmpfile",
+        width: videoSize.width,
+        height: videoSize.height,
+      });
+      const outPath = `${toFsPath(Paths.cache.uri)}/burned-${Date.now()}.mp4`;
+      await burnOverlayOntoVideo(uri, overlayPng, outPath);
+      return toFileUri(outPath);
+    } catch (error) {
+      console.error("[editor] video burn failed, saving without overlay:", error);
+      return uri;
+    }
+  }
+
   async function handleSave() {
     if (!pendingMedia || isSaving) return;
     setIsSaving(true);
     try {
       let localUri: string;
+      let rawUri: string | undefined;
 
       if (isVideo) {
         const trimmedUri = await trimIfNeeded(pendingMedia.uri);
-        localUri = await mediaService.copyMedia(trimmedUri);
-      } else if (keepOriginalPhoto) {
-        localUri = await mediaService.copyMedia(pendingMedia.uri);
+        const burnedUri = await burnIfNeeded(trimmedUri);
+        localUri = await mediaService.copyMedia(burnedUri);
+        if (keepOriginalMedia) {
+          rawUri = await mediaService.copyMedia(pendingMedia.uri);
+        }
       } else {
         const capturedUri = await captureRef(frameRef, {
           format: "jpg",
@@ -87,6 +117,9 @@ export function useEditorSave({
           result: "tmpfile",
         });
         localUri = await mediaService.copyMedia(capturedUri);
+        if (keepOriginalMedia) {
+          rawUri = await mediaService.copyMedia(pendingMedia.uri);
+        }
       }
 
       if (saveToGallery) {
@@ -100,6 +133,7 @@ export function useEditorSave({
           entryId: currentEntryId,
           type: isVideo ? "video" : "image",
           uri: localUri,
+          rawUri,
           order: existingMedia.length,
           duration: isVideo ? undefined : photoDuration,
         });

@@ -15,7 +15,7 @@ type Settings = {
   // Editor frame
   defaultAspectRatio: AspectRatio;
   // Storage
-  keepOriginalPhoto: boolean;
+  keepOriginalMedia: boolean;
   // Editor prefs — auto-saved on every save, not exposed in settings UI
   lastDateStampEnabled: boolean;
   lastCaptionStyle: CaptionStyle;
@@ -31,7 +31,7 @@ type SettingsState = Settings & {
   setUseNativeCamera: (value: boolean) => Promise<void>;
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
-  setKeepOriginalPhoto: (value: boolean) => Promise<void>;
+  setKeepOriginalMedia: (value: boolean) => Promise<void>;
   setLastEditorPrefs: (prefs: {
     captionStyle: CaptionStyle;
     volume: number;
@@ -46,7 +46,7 @@ const DEFAULTS: Settings = {
   useNativeCamera: false,
   recordingTimeLimit: null,
   defaultAspectRatio: "4:3",
-  keepOriginalPhoto: false,
+  keepOriginalMedia: false,
   lastDateStampEnabled: false,
   lastCaptionStyle: {
     textColor: "#FFFFFF",
@@ -83,7 +83,7 @@ function pickSettings(state: SettingsState): Settings {
     useNativeCamera: state.useNativeCamera,
     recordingTimeLimit: state.recordingTimeLimit,
     defaultAspectRatio: state.defaultAspectRatio,
-    keepOriginalPhoto: state.keepOriginalPhoto,
+    keepOriginalMedia: state.keepOriginalMedia,
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastCaptionStyle: state.lastCaptionStyle,
     lastVolume: state.lastVolume,
@@ -112,7 +112,7 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setUseNativeCamera: async (value) => persist({ useNativeCamera: value }),
     setRecordingTimeLimit: async (value) => persist({ recordingTimeLimit: value }),
     setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
-    setKeepOriginalPhoto: async (value) => persist({ keepOriginalPhoto: value }),
+    setKeepOriginalMedia: async (value) => persist({ keepOriginalMedia: value }),
 
     setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled, photoDuration }) =>
       persist({

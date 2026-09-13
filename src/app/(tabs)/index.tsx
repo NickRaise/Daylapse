@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { ActivityIndicator, Image, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import FontAwesomeFreeSolid, {
   type FontAwesomeFreeSolidIconName,
@@ -10,6 +10,7 @@ import { useOpenCamera } from "@/hooks/useOpenCamera";
 import useEntryStore from "@/store/entry.store";
 import { parseDateKey } from "@/components/calendar/utils";
 import { MontageCard } from "@/components/montage/MontageCard";
+import { MediaThumbnail } from "@/components/media/MediaThumbnail";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -119,10 +120,17 @@ export default function Home() {
             style={s.latestCard}
             onPress={() => router.push({ pathname: "/day", params: { dateKey: latestPreview.date } })}
           >
-            <Text style={s.latestDate}>{latestPreview.dayName}, {latestPreview.formattedDate}</Text>
-            <Text style={s.latestJournal} numberOfLines={3}>
-              {latestPreview.journal?.trim() || "No journal entry — just memories."}
-            </Text>
+            {data.latestThumbnail && (
+              <View style={s.latestThumbWrap}>
+                <MediaThumbnail uri={data.latestThumbnail.uri} type={data.latestThumbnail.type} />
+              </View>
+            )}
+            <View style={s.latestTextWrap}>
+              <Text style={s.latestDate}>{latestPreview.dayName}, {latestPreview.formattedDate}</Text>
+              <Text style={s.latestJournal} numberOfLines={3}>
+                {latestPreview.journal?.trim() || "No journal entry — just memories."}
+              </Text>
+            </View>
           </Pressable>
         </View>
       )}
@@ -141,7 +149,7 @@ export default function Home() {
                 style={s.recentThumb}
                 onPress={() => router.push({ pathname: "/day", params: { dateKey: item.dateKey } })}
               >
-                <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                <MediaThumbnail uri={item.uri} type={item.type} />
               </Pressable>
             ))}
           </ScrollView>
@@ -158,9 +166,12 @@ export default function Home() {
           </View>
           <View style={s.montageRow}>
             {data.montages.map((m) => (
-              <View key={m.id} style={s.montageCardWrap}>
-                <MontageCard montage={m} onPress={() => router.push("/gallery")} />
-              </View>
+              <MontageCard
+                key={m.id}
+                montage={m}
+                width={108}
+                onPress={() => router.push("/gallery")}
+              />
             ))}
           </View>
         </View>
@@ -278,13 +289,22 @@ const s = StyleSheet.create({
   },
 
   latestCard: {
+    flexDirection: "row",
     backgroundColor: colors.bgSurface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: radius.lg,
     padding: spacing[4],
-    gap: 6,
+    gap: spacing[3],
   },
+  latestThumbWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: radius.md,
+    overflow: "hidden",
+    backgroundColor: colors.bgSubtle,
+  },
+  latestTextWrap: { flex: 1, gap: 6 },
   latestDate: {
     fontSize: fontSize.xs,
     fontWeight: "700",
@@ -296,10 +316,10 @@ const s = StyleSheet.create({
     lineHeight: 20,
   },
 
-  recentRow: { gap: spacing[2] },
+  recentRow: { gap: spacing[3] },
   recentThumb: {
-    width: 72,
-    height: 96,
+    width: 108,
+    height: 144,
     borderRadius: radius.md,
     overflow: "hidden",
     backgroundColor: colors.bgSubtle,
@@ -308,5 +328,4 @@ const s = StyleSheet.create({
   },
 
   montageRow: { flexDirection: "row", gap: spacing[3] },
-  montageCardWrap: { width: 110 },
 });

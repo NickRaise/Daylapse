@@ -27,7 +27,7 @@ import {
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 import useEntryStore from "@/store/entry.store";
-import { MediaRepository, type SlideshowMedia } from "@/repositories/media.repository";
+import { MediaRepository, type MediaThumbnailRef, type SlideshowMedia } from "@/repositories/media.repository";
 
 const PAST_MONTHS = 60; // ~5 years back
 const FUTURE_MONTHS = 3; // 3 months ahead
@@ -51,7 +51,7 @@ export default function CalendarScreen() {
   const entriesCache = useEntryStore((s) => s.entriesCache);
   const loadEntriesCache = useEntryStore((s) => s.loadEntriesCache);
 
-  const [thumbnails, setThumbnails] = useState<Record<string, string>>({});
+  const [thumbnails, setThumbnails] = useState<Record<string, MediaThumbnailRef>>({});
 
   // Compute the date range for the full visible calendar span once
   const { startDate, endDate } = useMemo(() => {

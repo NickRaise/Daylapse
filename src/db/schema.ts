@@ -21,6 +21,7 @@ export const media = sqliteTable("media", {
   entryId: integer("entry_id").notNull(), // - Foreign key
   type: text({ enum: ["image", "video"] }).notNull(),
   uri: text().notNull(),
+  rawUri: text("raw_uri"), // Unedited source, kept only when "keep original for re-editing" is on
   caption: text(),
   duration: integer(), // Seconds: auto-detected for videos, user-picked display duration for photos
   order: integer().notNull().default(0), // Order of media files for a specific entry

@@ -5,6 +5,7 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { runQuery } from "@/repositories/util";
 
 export type SlideshowMedia = Media & { entryDate: string };
+export type MediaThumbnailRef = { uri: string; type: "image" | "video" };
 
 export class MediaRepository {
   static async addMedia(data: IMedia): Promise<number | null> {
@@ -13,6 +14,7 @@ export class MediaRepository {
         entryId: data.entryId,
         type: data.type,
         uri: data.uri,
+        rawUri: data.rawUri,
         caption: data.caption,
         duration: data.duration,
         order: data.order,
@@ -53,6 +55,7 @@ export class MediaRepository {
           entryId: media.entryId,
           type: media.type,
           uri: media.uri,
+          rawUri: media.rawUri,
           caption: media.caption,
           duration: media.duration,
           order: media.order,
@@ -70,18 +73,18 @@ export class MediaRepository {
   static async getFirstMediaByDateRange(
     startDate: string,
     endDate: string,
-  ): Promise<Record<string, string>> {
+  ): Promise<Record<string, MediaThumbnailRef>> {
     return runQuery("media.getFirstMediaByDateRange", async () => {
       const rows = await db
-        .select({ date: entries.date, uri: media.uri })
+        .select({ date: entries.date, uri: media.uri, type: media.type })
         .from(entries)
         .innerJoin(
           media,
           and(eq(media.entryId, entries.id), eq(media.order, 0)),
         )
         .where(and(gte(entries.date, startDate), lte(entries.date, endDate)));
-      const result: Record<string, string> = {};
-      for (const row of rows) result[row.date] = row.uri;
+      const result: Record<string, MediaThumbnailRef> = {};
+      for (const row of rows) result[row.date] = { uri: row.uri, type: row.type };
       return result;
     }, {});
   }

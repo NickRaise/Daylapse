@@ -35,8 +35,8 @@ export default function Settings() {
   const setRecordingTimeLimit = useSettingsStore((s) => s.setRecordingTimeLimit);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
-  const keepOriginalPhoto = useSettingsStore((s) => s.keepOriginalPhoto);
-  const setKeepOriginalPhoto = useSettingsStore((s) => s.setKeepOriginalPhoto);
+  const keepOriginalMedia = useSettingsStore((s) => s.keepOriginalMedia);
+  const setKeepOriginalMedia = useSettingsStore((s) => s.setKeepOriginalMedia);
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -149,21 +149,21 @@ export default function Settings() {
           <View style={s.rowText}>
             <Text style={s.rowTitle}>Keep original for re-editing</Text>
             <Text style={s.rowDesc}>
-              Saves the unedited photo so overlays can be changed later. Turn off to burn
-              edits into the photo permanently and save only that version.
+              Captions and the date stamp are always burned into the saved photo or video.
+              Turn this on to additionally keep the unedited original, so it can be re-edited later.
             </Text>
           </View>
           <Switch
-            value={keepOriginalPhoto}
-            onValueChange={setKeepOriginalPhoto}
+            value={keepOriginalMedia}
+            onValueChange={setKeepOriginalMedia}
             trackColor={{ false: colors.border, true: colors.primary }}
             thumbColor={colors.bgSurface}
           />
         </View>
         <Text style={s.note}>
-          {keepOriginalPhoto
-            ? "Original photo is saved — overlays can be changed on re-edit."
-            : "Only the edited photo is saved — uses less storage."}
+          {keepOriginalMedia
+            ? "Original is also saved — can be re-edited later."
+            : "Only the edited version is saved — uses less storage."}
         </Text>
       </View>
     </ScrollView>

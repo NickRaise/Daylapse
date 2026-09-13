@@ -31,6 +31,7 @@ export interface IMedia {
   entryId: number;
   type: "image" | "video";
   uri: string;
+  rawUri?: string;
   caption?: string;
   duration?: number;
   order: number;

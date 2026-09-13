@@ -23,6 +23,7 @@ import { TrimPanel } from "@/components/editor/TrimPanel";
 import { VolumePanel } from "@/components/editor/VolumePanel";
 import { DateStampOverlay } from "@/components/editor/DateStampOverlay";
 import { DraggableCaption } from "@/components/editor/DraggableCaption";
+import { BurnOverlay } from "@/components/editor/BurnOverlay";
 import { EditorHeader } from "@/components/editor/EditorHeader";
 import { EditorTabBar } from "@/components/editor/EditorTabBar";
 import { EditorActions } from "@/components/editor/EditorActions";
@@ -31,6 +32,7 @@ import { useEditorFit } from "@/hooks/useEditorFit";
 import { useCaptionEditor } from "@/hooks/useCaptionEditor";
 import { useEditorSave } from "@/hooks/useEditorSave";
 import { todayDateKey } from "@/utils/date";
+import { frameRectToMediaRect, frameToMediaScale, type FitMode } from "@/utils/frameMapping";
 import type { DateStampFormat } from "@/types";
 
 type Tab = "trim" | "text";
@@ -48,6 +50,8 @@ export default function EditorScreen() {
   const router = useRouter();
   const { width: screenW } = useWindowDimensions();
   const frameRef = useRef<View>(null);
+  const burnOverlayRef = useRef<View>(null);
+  const [captionRect, setCaptionRect] = useState<{ left: number; top: number; width: number; height: number } | null>(null);
 
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
@@ -94,9 +98,28 @@ export default function EditorScreen() {
     defaultAspectRatio,
   });
 
+  const { width: frameW, height: frameH } = frameSize(
+    defaultAspectRatio,
+    screenW,
+  );
+  const dateKey = todayDateKey();
+  const captionDragMode =
+    (!isVideo || activeTab === "text") && captionText.length > 0;
+
+  const fitMode: FitMode = fit === "landscape" ? "cover" : "contain";
+  const hasOverlay = captionText.length > 0 || dateStampEnabled;
+  const burnScale = videoSize ? frameToMediaScale(frameW, frameH, videoSize.width, videoSize.height, fitMode) : 1;
+  const mediaCaptionPos =
+    captionText && captionRect && videoSize
+      ? frameRectToMediaRect(captionRect, frameW, frameH, videoSize.width, videoSize.height, fitMode)
+      : null;
+
   const { handleSave, isSaving } = useEditorSave({
     frameRef,
+    burnOverlayRef,
     isVideo,
+    hasOverlay,
+    videoSize,
     captionStyle,
     volume,
     dateStampEnabled,
@@ -109,14 +132,6 @@ export default function EditorScreen() {
   useEffect(() => {
     if (!pendingMedia) router.back();
   }, []);
-
-  const { width: frameW, height: frameH } = frameSize(
-    defaultAspectRatio,
-    screenW,
-  );
-  const dateKey = todayDateKey();
-  const captionDragMode =
-    (!isVideo || activeTab === "text") && captionText.length > 0;
 
   function handleRetake() {
     // Not clearing pendingMedia here — camera.tsx auto-dismisses on focus once it's null, which would skip past the camera screen entirely.
@@ -161,6 +176,7 @@ export default function EditorScreen() {
               position={captionStyle.position}
               draggable={captionDragMode}
               resetSignal={captionResetToken}
+              onRectChange={setCaptionRect}
             />
             {dateStampEnabled && (
               <DateStampOverlay
@@ -244,6 +260,24 @@ export default function EditorScreen() {
           onSave={handleSave}
           isSaving={isSaving}
         />
+
+        {isVideo && hasOverlay && videoSize && (
+          <View style={s.burnOffscreen} pointerEvents="none">
+            <View ref={burnOverlayRef} collapsable={false}>
+              <BurnOverlay
+                width={videoSize.width}
+                height={videoSize.height}
+                scale={burnScale}
+                captionText={captionText}
+                captionPos={mediaCaptionPos}
+                captionStyle={captionStyle}
+                dateStampEnabled={dateStampEnabled}
+                dateKey={dateKey}
+                dateFormat={DATE_STAMP_FORMAT}
+              />
+            </View>
+          </View>
+        )}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -252,6 +286,7 @@ export default function EditorScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
+  burnOffscreen: { position: "absolute", left: -100000, top: 0 },
 
   loadingRoot: {
     flex: 1,

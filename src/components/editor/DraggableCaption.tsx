@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import type { CaptionPosition, CaptionSize } from "@/types";
 
-const SIZE_FONT: Record<CaptionSize, number> = { sm: 12, md: 16, lg: 22 };
-const MARGIN = 24;
+export const CAPTION_SIZE_FONT: Record<CaptionSize, number> = { sm: 12, md: 16, lg: 22 };
+export const CAPTION_MARGIN = 24;
+const SIZE_FONT = CAPTION_SIZE_FONT;
+const MARGIN = CAPTION_MARGIN;
 
 // Computed straight from the current (possibly still-settling) measured size,
 // in the same render pass — no follow-up "correction" render, so growing text
@@ -34,6 +36,8 @@ type Props = {
   draggable?: boolean;
   /** Bump this (e.g. a counter) to snap the caption back to its preset position. */
   resetSignal?: number;
+  /** Reports the caption's resolved on-screen rect, so it can be re-mapped onto the exported media. */
+  onRectChange?: (rect: { left: number; top: number; width: number; height: number }) => void;
 };
 
 export function DraggableCaption({
@@ -46,6 +50,7 @@ export function DraggableCaption({
   position = "bottom-center",
   draggable = true,
   resetSignal,
+  onRectChange,
 }: Props) {
   const [measured, setMeasured] = useState({ w: 0, h: 0 });
   // null while following the preset corner; set once the user drags it free.
@@ -58,10 +63,16 @@ export function DraggableCaption({
     setDragPos(null);
   }, [position, frameWidth, frameHeight, resetSignal]);
 
-  if (!text) return null;
-
   const { left, top } =
     dragPos ?? presetLeftTop(position, frameWidth, frameHeight, measured.w, measured.h);
+
+  useEffect(() => {
+    if (text && measured.w > 0 && measured.h > 0) {
+      onRectChange?.({ left, top, width: measured.w, height: measured.h });
+    }
+  }, [text, left, top, measured.w, measured.h]);
+
+  if (!text) return null;
 
   return (
     <View

@@ -14,13 +14,14 @@ import {
   MONTH_NAMES,
   type MonthData,
 } from './utils';
+import type { MediaThumbnailRef } from '@/repositories/media.repository';
 
 type MonthViewProps = {
   month: MonthData;
   today: string;
   todayTimestamp: number;
   entries: Record<string, boolean>;
-  thumbnails: Record<string, string>;
+  thumbnails: Record<string, MediaThumbnailRef>;
   onDayPress: (dateKey: string) => void;
 };
 
@@ -59,7 +60,8 @@ const MonthView = memo(function MonthView({
                   isToday={dateKey === today}
                   isFuture={cellTs > todayTimestamp}
                   hasEntry={!!entries[dateKey]}
-                  thumbnailUri={thumbnails[dateKey]}
+                  thumbnailUri={thumbnails[dateKey]?.uri}
+                  thumbnailType={thumbnails[dateKey]?.type}
                   onPress={onDayPress}
                 />
               );

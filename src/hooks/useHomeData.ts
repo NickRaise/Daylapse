@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { EntryRepository } from "@/repositories/entry.repository";
-import { MediaRepository } from "@/repositories/media.repository";
+import { MediaRepository, type MediaThumbnailRef } from "@/repositories/media.repository";
 import { MontageRepository } from "@/repositories/montage.repository";
 import { todayDateKey } from "@/utils/date";
 import { formatDateKey } from "@/components/calendar/utils";
@@ -10,7 +10,7 @@ import type { Entry, Montage } from "@/db/schema";
 const HISTORY_DAYS = 730; // ~2 years — wide enough for a meaningful streak/entry count
 const RECENT_DAYS = 10;
 
-export type RecentThumbnail = { dateKey: string; uri: string };
+export type RecentThumbnail = { dateKey: string } & MediaThumbnailRef;
 
 export type HomeData = {
   loading: boolean;
@@ -19,6 +19,7 @@ export type HomeData = {
   streak: number;
   totalEntries: number;
   latestEntry: Entry | null;
+  latestThumbnail: MediaThumbnailRef | null;
   recentThumbnails: RecentThumbnail[];
   montages: Montage[];
 };
@@ -30,6 +31,7 @@ const EMPTY_DATA: HomeData = {
   streak: 0,
   totalEntries: 0,
   latestEntry: null,
+  latestThumbnail: null,
   recentThumbnails: [],
   montages: [],
 };
@@ -51,7 +53,7 @@ export function useHomeData(): HomeData {
 
     const [entries, thumbnails, montages] = await Promise.all([
       EntryRepository.getEntriesByDateRange(historyStart, todayKey),
-      MediaRepository.getFirstMediaByDateRange(recentStart, todayKey),
+      MediaRepository.getFirstMediaByDateRange(historyStart, todayKey),
       MontageRepository.getAllMontages(),
     ]);
 
@@ -75,8 +77,11 @@ export function useHomeData(): HomeData {
     const latestEntry = pool.length > 0 ? pool.reduce((a, b) => (a.date > b.date ? a : b)) : null;
 
     const recentThumbnails = Object.entries(thumbnails)
-      .map(([dateKey, uri]) => ({ dateKey, uri }))
+      .filter(([dateKey]) => dateKey >= recentStart)
+      .map(([dateKey, ref]) => ({ dateKey, ...ref }))
       .sort((a, b) => (a.dateKey < b.dateKey ? 1 : -1));
+
+    const latestThumbnail = latestEntry ? (thumbnails[latestEntry.date] ?? null) : null;
 
     setData({
       loading: false,
@@ -85,6 +90,7 @@ export function useHomeData(): HomeData {
       streak,
       totalEntries: rows.length,
       latestEntry,
+      latestThumbnail,
       recentThumbnails,
       montages: montages.slice(0, 3),
     });
