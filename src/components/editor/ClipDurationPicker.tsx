@@ -8,9 +8,17 @@ type Props = {
   currentDuration: number;
   maxDuration: number;
   onDurationChange: (seconds: number) => void;
+  label?: string;
+  showSummary?: boolean;
 };
 
-export function ClipDurationPicker({ currentDuration, maxDuration, onDurationChange }: Props) {
+export function ClipDurationPicker({
+  currentDuration,
+  maxDuration,
+  onDurationChange,
+  label = "Clip",
+  showSummary = true,
+}: Props) {
   const [isCustom, setIsCustom] = useState(false);
   const [customText, setCustomText] = useState("");
   // Tracks which preset the user picked, separate from the (possibly clamped) applied duration.
@@ -36,10 +44,10 @@ export function ClipDurationPicker({ currentDuration, maxDuration, onDurationCha
 
   return (
     <>
-      <Text style={s.clipDurLabel}>{currentDuration.toFixed(1)}s</Text>
+      {showSummary && <Text style={s.clipDurLabel}>{currentDuration.toFixed(1)}s</Text>}
 
       <View style={s.row}>
-        <Text style={s.rowLabel}>Clip</Text>
+        <Text style={s.rowLabel}>{label}</Text>
 
         {PRESET_DURATIONS.map((d) => {
           const active = !isCustom && selectedPreset === d;

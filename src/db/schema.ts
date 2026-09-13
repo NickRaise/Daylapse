@@ -22,7 +22,7 @@ export const media = sqliteTable("media", {
   type: text({ enum: ["image", "video"] }).notNull(),
   uri: text().notNull(),
   caption: text(),
-  duration: integer(), // Duration in seconds for videos
+  duration: integer(), // Seconds: auto-detected for videos, user-picked display duration for photos
   order: integer().notNull().default(0), // Order of media files for a specific entry
   createdAt: integer({ mode: "timestamp" })
     .notNull()

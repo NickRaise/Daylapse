@@ -16,8 +16,9 @@ type Options = {
   captionStyle: CaptionStyle;
   volume: number;
   dateStampEnabled: boolean;
-  trimRangeRef: React.MutableRefObject<TrimRange>;
+  trimRangeRef: React.RefObject<TrimRange>;
   videoDuration: number;
+  photoDuration: number;
   onComplete: () => void;
 };
 
@@ -34,6 +35,7 @@ export function useEditorSave({
   dateStampEnabled,
   trimRangeRef,
   videoDuration,
+  photoDuration,
   onComplete,
 }: Options): Result {
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
@@ -103,6 +105,7 @@ export function useEditorSave({
           type: isVideo ? "video" : "image",
           uri: localUri,
           order: existingMedia.length,
+          duration: isVideo ? undefined : photoDuration,
         });
       }
 
@@ -110,6 +113,7 @@ export function useEditorSave({
         captionStyle,
         volume,
         dateStampEnabled,
+        photoDuration,
       });
 
       setPendingMedia(null);

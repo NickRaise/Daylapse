@@ -20,6 +20,7 @@ type Settings = {
   lastDateStampEnabled: boolean;
   lastCaptionStyle: CaptionStyle;
   lastVolume: number;
+  lastPhotoDuration: number;
 };
 
 type SettingsState = Settings & {
@@ -35,6 +36,7 @@ type SettingsState = Settings & {
     captionStyle: CaptionStyle;
     volume: number;
     dateStampEnabled: boolean;
+    photoDuration: number;
   }) => Promise<void>;
 };
 
@@ -53,6 +55,7 @@ const DEFAULTS: Settings = {
     position: "bottom-left",
   },
   lastVolume: 1,
+  lastPhotoDuration: 1,
 };
 
 async function readFile(): Promise<Settings> {
@@ -84,6 +87,7 @@ function pickSettings(state: SettingsState): Settings {
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastCaptionStyle: state.lastCaptionStyle,
     lastVolume: state.lastVolume,
+    lastPhotoDuration: state.lastPhotoDuration,
   };
 }
 
@@ -110,11 +114,12 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
     setKeepOriginalPhoto: async (value) => persist({ keepOriginalPhoto: value }),
 
-    setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled }) =>
+    setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled, photoDuration }) =>
       persist({
         lastCaptionStyle: captionStyle,
         lastVolume: volume,
         lastDateStampEnabled: dateStampEnabled,
+        lastPhotoDuration: photoDuration,
       }),
   };
 });

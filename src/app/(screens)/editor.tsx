@@ -18,6 +18,7 @@ import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
 import { MediaFrame, frameSize } from "@/components/editor/MediaFrame";
 import { CaptionPanel } from "@/components/editor/CaptionPanel";
+import { ClipDurationPicker } from "@/components/editor/ClipDurationPicker";
 import { TrimPanel } from "@/components/editor/TrimPanel";
 import { VolumePanel } from "@/components/editor/VolumePanel";
 import { DateStampOverlay } from "@/components/editor/DateStampOverlay";
@@ -53,11 +54,13 @@ export default function EditorScreen() {
   const lastCaptionStyle = useSettingsStore((s) => s.lastCaptionStyle);
   const lastVolume = useSettingsStore((s) => s.lastVolume);
   const lastDateStampEnabled = useSettingsStore((s) => s.lastDateStampEnabled);
+  const lastPhotoDuration = useSettingsStore((s) => s.lastPhotoDuration);
 
   const isVideo = pendingMedia?.type === "video";
 
   const [activeTab, setActiveTab] = useState<Tab>("trim");
   const [volume, setVolume] = useState(lastVolume);
+  const [photoDuration, setPhotoDuration] = useState(lastPhotoDuration);
 
   const {
     captionText,
@@ -99,6 +102,7 @@ export default function EditorScreen() {
     dateStampEnabled,
     trimRangeRef,
     videoDuration,
+    photoDuration,
     onComplete: router.back,
   });
 
@@ -210,14 +214,28 @@ export default function EditorScreen() {
               <VolumePanel volume={volume} onVolumeChange={setVolume} />
             </>
           ) : (
-            <CaptionPanel
-              value={captionText}
-              onChange={setCaptionText}
-              style={captionStyle}
-              onStyleChange={setCaptionStyle}
-              dateEnabled={dateStampEnabled}
-              onDateToggle={setDateStampEnabled}
-            />
+            <>
+              {!isVideo && (
+                <>
+                  <ClipDurationPicker
+                    currentDuration={photoDuration}
+                    maxDuration={30}
+                    onDurationChange={setPhotoDuration}
+                    label="Duration"
+                    showSummary={false}
+                  />
+                  <View style={s.panelDivider} />
+                </>
+              )}
+              <CaptionPanel
+                value={captionText}
+                onChange={setCaptionText}
+                style={captionStyle}
+                onStyleChange={setCaptionStyle}
+                dateEnabled={dateStampEnabled}
+                onDateToggle={setDateStampEnabled}
+              />
+            </>
           )}
         </ScrollView>
 
