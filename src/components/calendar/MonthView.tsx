@@ -22,7 +22,6 @@ type MonthViewProps = {
   entries: Record<string, boolean>;
   thumbnails: Record<string, string>;
   onDayPress: (dateKey: string) => void;
-  onDayLongPress: (dateKey: string) => void;
 };
 
 const MonthView = memo(function MonthView({
@@ -32,7 +31,6 @@ const MonthView = memo(function MonthView({
   entries,
   thumbnails,
   onDayPress,
-  onDayLongPress,
 }: MonthViewProps) {
   const { year, month: monthIdx, daysInMonth } = month;
   const rows = buildDayRows(daysInMonth, NUM_COLUMNS);
@@ -63,7 +61,6 @@ const MonthView = memo(function MonthView({
                   hasEntry={!!entries[dateKey]}
                   thumbnailUri={thumbnails[dateKey]}
                   onPress={onDayPress}
-                  onLongPress={onDayLongPress}
                 />
               );
             })}

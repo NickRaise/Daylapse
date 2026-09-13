@@ -45,14 +45,6 @@ export default function FloatingActions() {
 
   return (
     <View className={styles.container}>
-      <Pressable onPress={() => console.log("Play button pressed")}>
-        <RenderIcon
-          name="play-circle"
-          size={ICON_SIZE}
-          color={colors.textPrimary}
-          bgColor="white"
-        />
-      </Pressable>
       <Pressable onPress={handleAddPress}>
         <RenderIcon
           name="plus-circle"

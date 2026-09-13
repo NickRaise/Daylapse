@@ -24,8 +24,12 @@ export const cotton: Theme = {
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
 
+    placeholderPrimary: '#7E8F91',
+    placeholderSecondary: '#A5B3B4',
+
     border:      'rgba(176,196,177,0.4)',
     borderFocus: '#EDAFB8',
+    borderDark:  '#4A5759',
 
     success: '#B0C4B1',  // Ash Grey (green cast)
     warning: '#F0C490',

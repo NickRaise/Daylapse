@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { colors, radius, spacing, fontSize } from "../../theme";
+import { formatDuration } from "../../utils/time";
 
 const MODE_ROW_PAD = spacing[1];
 
@@ -25,12 +26,6 @@ type Props = {
   onGallery: () => void;
   onFlip: () => void;
 };
-
-function formatDuration(seconds: number): string {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
 
 export function CameraControls({
   mode,
@@ -303,8 +298,5 @@ const t = StyleSheet.create({
     fontSize: fontSize.xs,
     fontWeight: "500",
     color: colors.textMuted,
-  },
-  sideBtnDisabled: {
-    color: colors.textDisabled,
   },
 });

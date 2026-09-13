@@ -1,3 +1,5 @@
+import { todayDateKey } from "@/utils/date";
+
 export type MonthData = {
   year: number;
   month: number; // 0-indexed
@@ -76,8 +78,7 @@ export function formatDateKey(
 }
 
 export function getTodayKey(): string {
-  const d = new Date();
-  return formatDateKey(d.getFullYear(), d.getMonth(), d.getDate());
+  return todayDateKey();
 }
 
 export function getTodayTimestamp(): number {

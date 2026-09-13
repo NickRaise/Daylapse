@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useVideoPlayer } from "expo-video";
 import type { VideoPlayer } from "expo-video";
+import * as VideoThumbnails from "expo-video-thumbnails";
 import {
   cancelAnimation,
   Easing,
@@ -57,20 +58,19 @@ export function useEditorVideo({ isVideo, mediaUri, volume }: Options): Result {
     return () => sub.remove();
   }, [isVideo, videoPlayer]);
 
-  // Also reads videoTrack directly since sourceLoad can fire before this subscribes.
+  // videoTrack.size ignores rotation metadata on Android (reports the raw encoded buffer, not the display orientation), so a thumbnail — which must render rotation-correct to look right — is used instead.
   useEffect(() => {
-    if (!isVideo) return;
-    const readSize = () => {
-      const size = videoPlayer.videoTrack?.size;
-      if (size) setVideoSize(size);
+    if (!isVideo || !mediaUri) return;
+    let cancelled = false;
+    VideoThumbnails.getThumbnailAsync(mediaUri, { time: 0 })
+      .then(({ width, height }) => {
+        if (!cancelled) setVideoSize({ width, height });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
     };
-    readSize();
-    const subs = [
-      videoPlayer.addListener("sourceLoad", readSize),
-      videoPlayer.addListener("statusChange", readSize),
-    ];
-    return () => subs.forEach((sub) => sub.remove());
-  }, [isVideo, videoPlayer]);
+  }, [isVideo, mediaUri]);
 
   // Playhead sweeps start → end of the trim box, not the full video.
   useEffect(() => {

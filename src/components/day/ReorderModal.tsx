@@ -18,7 +18,7 @@ export function ReorderModal({ visible, mediaFiles, onSave, onCancel }: Props) {
 
   useEffect(() => {
     if (visible) setData(mediaFiles);
-  }, [visible]);
+  }, [visible, mediaFiles]);
 
   const renderItem = ({ item }: { item: Media }) => (
     <View style={s.card}>

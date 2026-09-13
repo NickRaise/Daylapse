@@ -12,7 +12,6 @@ type DayCellProps = {
   hasEntry: boolean;
   thumbnailUri?: string;
   onPress: (dateKey: string) => void;
-  onLongPress: (dateKey: string) => void;
 };
 
 const DayCell = memo(function DayCell({
@@ -24,7 +23,6 @@ const DayCell = memo(function DayCell({
   hasEntry,
   thumbnailUri,
   onPress,
-  onLongPress,
 }: DayCellProps) {
   const hasThumbnail = !!thumbnailUri && !isFuture && !isToday;
 
@@ -42,7 +40,6 @@ const DayCell = memo(function DayCell({
       <Pressable
         style={cellStyle}
         onPress={() => onPress(dateKey)}
-        onLongPress={() => onLongPress(dateKey)}
         android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
       >
         <ImageBackground
@@ -63,7 +60,6 @@ const DayCell = memo(function DayCell({
     <Pressable
       style={cellStyle}
       onPress={() => onPress(dateKey)}
-      onLongPress={() => onLongPress(dateKey)}
       android_ripple={{ color: colors.ripple, radius: CELL_SIZE / 2 }}
     >
       <Text

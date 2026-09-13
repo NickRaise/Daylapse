@@ -24,8 +24,12 @@ export const blossom: Theme = {
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
 
+    placeholderPrimary: '#8A6080',
+    placeholderSecondary: '#C0A0B5',
+
     border:      'rgba(205,180,219,0.5)',  // Pink Orchid tint
     borderFocus: '#FFAFCC',
+    borderDark:  '#4A2545',
 
     success: '#A8D8B0',
     warning: '#FFD9A0',

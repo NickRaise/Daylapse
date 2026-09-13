@@ -13,7 +13,7 @@ import type { EditorMedia } from "@/store/editor.store";
 
 const H_PAD = 16;
 
-export function baseFrameRatio(ratio: AspectRatio): number {
+function baseFrameRatio(ratio: AspectRatio): number {
   if (ratio === "1:1") return 1;
   const [w, h] = ratio.split(":").map(Number);
   return w / h;

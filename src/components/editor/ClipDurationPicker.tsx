@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { colors, fontSize, spacing } from "@/theme";
 
@@ -13,17 +13,22 @@ type Props = {
 export function ClipDurationPicker({ currentDuration, maxDuration, onDurationChange }: Props) {
   const [isCustom, setIsCustom] = useState(false);
   const [customText, setCustomText] = useState("");
-  // Tracks which preset the user picked, separately from the (possibly
-  // clamped) applied duration, so a too-long preset still shows selected.
+  // Tracks which preset the user picked, separate from the (possibly clamped) applied duration.
   const [selectedPreset, setSelectedPreset] = useState<number | null>(
     () => PRESET_DURATIONS.find((d) => Math.abs(currentDuration - d) < 0.05) ?? null,
   );
 
+  // currentDuration starts near-zero before the video's real duration resolves, so the initializer above can miss the eventual default — resync once it settles.
+  useEffect(() => {
+    if (selectedPreset !== null) return;
+    const match = PRESET_DURATIONS.find((d) => Math.abs(currentDuration - d) < 0.05);
+    if (match !== undefined) setSelectedPreset(match);
+  }, [currentDuration, selectedPreset]);
+
   function handleCustomSubmit() {
     const v = parseFloat(customText);
     if (isNaN(v) || v <= 0) return;
-    // Reflect the actual (possibly clamped) applied value, so the input never
-    // silently disagrees with what's really selected.
+    // Reflects the actual clamped value, so the input never disagrees with what's really selected.
     const clamped = Math.min(v, maxDuration);
     onDurationChange(clamped);
     setCustomText(clamped.toFixed(1));

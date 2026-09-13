@@ -2,10 +2,11 @@ import { IEntry, Mood } from "@/types";
 import { db } from "@/db/index";
 import { entries, Entry } from "@/db/schema";
 import { and, eq, lte, gte } from "drizzle-orm";
+import { runQuery } from "@/repositories/util";
 
 export class EntryRepository {
   static async createEntry(entry: IEntry): Promise<number | null> {
-    try {
+    return runQuery("entry.createEntry", async () => {
       const newEntry = await db.insert(entries).values({
         date: entry.dateKey,
         journal: entry.journal,
@@ -13,94 +14,49 @@ export class EntryRepository {
         coverMediaId: entry.coverMediaId,
       });
       return Number(newEntry.lastInsertRowId);
-    } catch (error) {
-      console.error("Error creating entry:", error);
-      return null;
-    }
+    }, null);
   }
 
   static async getEntryByDate(dateKey: string): Promise<Entry | null> {
-    try {
-      const entry = await db
-        .select()
-        .from(entries)
-        .where(eq(entries.date, dateKey));
+    return runQuery("entry.getEntryByDate", async () => {
+      const entry = await db.select().from(entries).where(eq(entries.date, dateKey));
       return entry[0] || null;
-    } catch (error) {
-      console.error("Error fetching entry by date:", error);
-      return null;
-    }
+    }, null);
   }
 
   static async getEntryById(id: number): Promise<Entry | null> {
-    try {
+    return runQuery("entry.getEntryById", async () => {
       const entry = await db.select().from(entries).where(eq(entries.id, id));
       return entry[0] || null;
-    } catch (error) {
-      console.error("Error fetching entry by ID:", error);
-      return null;
-    }
+    }, null);
   }
 
   static async updateJournalEntry(
     id: number,
     journal: string,
   ): Promise<boolean> {
-    try {
+    return runQuery("entry.updateJournalEntry", async () => {
       await db.update(entries).set({ journal }).where(eq(entries.id, id));
       return true;
-    } catch (error) {
-      console.error("Error updating journal entry:", error);
-      return false;
-    }
+    }, false);
   }
 
   static async updateMood(id: number, mood: Mood): Promise<boolean> {
-    try {
+    return runQuery("entry.updateMood", async () => {
       await db.update(entries).set({ mood }).where(eq(entries.id, id));
       return true;
-    } catch (error) {
-      console.error("Error updating mood:", error);
-      return false;
-    }
-  }
-
-  static async updateCoverMedia(
-    id: number,
-    coverMediaId: number,
-  ): Promise<boolean> {
-    try {
-      await db.update(entries).set({ coverMediaId }).where(eq(entries.id, id));
-      return true;
-    } catch (error) {
-      console.error("Error updating cover media:", error);
-      return false;
-    }
+    }, false);
   }
 
   static async getEntriesByDateRange(
     startDate: string,
     endDate: string,
   ): Promise<Entry[] | null> {
-    try {
-      const entriesData = await db
+    return runQuery("entry.getEntriesByDateRange", () =>
+      db
         .select()
         .from(entries)
-        .where(and(gte(entries.date, startDate), lte(entries.date, endDate)));
-      return entriesData;
-    } catch (error) {
-      console.error("Error fetching entries by date range:", error);
-      return [];
-    }
-  }
-
-  static async deleteEntry(id: number): Promise<boolean> {
-    try {
-      await db.delete(entries).where(eq(entries.id, id));
-      return true;
-    } catch (error) {
-      console.error("Error deleting entry:", error);
-      return false;
-    }
+        .where(and(gte(entries.date, startDate), lte(entries.date, endDate))),
+    []);
   }
 }

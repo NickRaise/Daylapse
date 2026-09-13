@@ -129,8 +129,6 @@ export default function CalendarScreen() {
     [router],
   );
 
-  const handleDayLongPress = useCallback((_dateKey: string) => {}, []);
-
   const renderItem = useCallback(
     ({ item }: { item: MonthData }) => (
       <MonthView
@@ -140,10 +138,9 @@ export default function CalendarScreen() {
         entries={entries}
         thumbnails={thumbnails}
         onDayPress={handleDayPress}
-        onDayLongPress={handleDayLongPress}
       />
     ),
-    [today, todayTimestamp, entries, thumbnails, handleDayPress, handleDayLongPress],
+    [today, todayTimestamp, entries, thumbnails, handleDayPress],
   );
 
   const keyExtractor = useCallback((item: MonthData) => item.key, []);

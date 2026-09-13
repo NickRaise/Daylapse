@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { File, Paths } from "expo-file-system";
-import type { AspectRatio, CaptionStyle, DateStampFormat, DateStampPosition } from "@/types";
+import type { AspectRatio, CaptionStyle } from "@/types";
 
 const settingsFile = new File(Paths.document, "app-settings.json");
 
@@ -18,8 +18,6 @@ type Settings = {
   keepOriginalPhoto: boolean;
   // Editor prefs — auto-saved on every save, not exposed in settings UI
   lastDateStampEnabled: boolean;
-  lastDateStampPosition: DateStampPosition;
-  lastDateStampFormat: DateStampFormat;
   lastCaptionStyle: CaptionStyle;
   lastVolume: number;
 };
@@ -37,8 +35,6 @@ type SettingsState = Settings & {
     captionStyle: CaptionStyle;
     volume: number;
     dateStampEnabled: boolean;
-    dateStampPosition: DateStampPosition;
-    dateStampFormat: DateStampFormat;
   }) => Promise<void>;
 };
 
@@ -50,8 +46,6 @@ const DEFAULTS: Settings = {
   defaultAspectRatio: "4:3",
   keepOriginalPhoto: false,
   lastDateStampEnabled: false,
-  lastDateStampPosition: "bottom-right",
-  lastDateStampFormat: "DD MMM YYYY",
   lastCaptionStyle: {
     textColor: "#FFFFFF",
     bgColor: "rgba(0,0,0,0.5)",
@@ -71,8 +65,12 @@ async function readFile(): Promise<Settings> {
   }
 }
 
-function writeFile(data: Settings) {
-  settingsFile.write(JSON.stringify(data));
+async function writeFile(data: Settings) {
+  try {
+    await settingsFile.write(JSON.stringify(data));
+  } catch (error) {
+    console.error("[settings] write failed:", error);
+  }
 }
 
 function pickSettings(state: SettingsState): Settings {
@@ -84,69 +82,41 @@ function pickSettings(state: SettingsState): Settings {
     defaultAspectRatio: state.defaultAspectRatio,
     keepOriginalPhoto: state.keepOriginalPhoto,
     lastDateStampEnabled: state.lastDateStampEnabled,
-    lastDateStampPosition: state.lastDateStampPosition,
-    lastDateStampFormat: state.lastDateStampFormat,
     lastCaptionStyle: state.lastCaptionStyle,
     lastVolume: state.lastVolume,
   };
 }
 
-const useSettingsStore = create<SettingsState>((set, get) => ({
-  ...DEFAULTS,
-  hydrated: false,
+const useSettingsStore = create<SettingsState>((set, get) => {
+  // Applies a partial settings change and persists the full merged settings to disk.
+  function persist(patch: Partial<Settings>) {
+    set(patch);
+    writeFile({ ...pickSettings(get()), ...patch });
+  }
 
-  hydrate: async () => {
-    const stored = await readFile();
-    set({ ...stored, hydrated: true });
-  },
+  return {
+    ...DEFAULTS,
+    hydrated: false,
 
-  setSaveToGallery: async (value) => {
-    set({ saveToGallery: value });
-    writeFile({ ...pickSettings(get()), saveToGallery: value });
-  },
+    hydrate: async () => {
+      const stored = await readFile();
+      set({ ...stored, hydrated: true });
+    },
 
-  setVideoQuality: async (value) => {
-    set({ videoQuality: value });
-    writeFile({ ...pickSettings(get()), videoQuality: value });
-  },
+    setSaveToGallery: async (value) => persist({ saveToGallery: value }),
+    setVideoQuality: async (value) => persist({ videoQuality: value }),
+    setUseNativeCamera: async (value) => persist({ useNativeCamera: value }),
+    setRecordingTimeLimit: async (value) => persist({ recordingTimeLimit: value }),
+    setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
+    setKeepOriginalPhoto: async (value) => persist({ keepOriginalPhoto: value }),
 
-  setUseNativeCamera: async (value) => {
-    set({ useNativeCamera: value });
-    writeFile({ ...pickSettings(get()), useNativeCamera: value });
-  },
-
-  setRecordingTimeLimit: async (value) => {
-    set({ recordingTimeLimit: value });
-    writeFile({ ...pickSettings(get()), recordingTimeLimit: value });
-  },
-
-  setDefaultAspectRatio: async (value) => {
-    set({ defaultAspectRatio: value });
-    writeFile({ ...pickSettings(get()), defaultAspectRatio: value });
-  },
-
-  setKeepOriginalPhoto: async (value) => {
-    set({ keepOriginalPhoto: value });
-    writeFile({ ...pickSettings(get()), keepOriginalPhoto: value });
-  },
-
-  setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled, dateStampPosition, dateStampFormat }) => {
-    set({
-      lastCaptionStyle: captionStyle,
-      lastVolume: volume,
-      lastDateStampEnabled: dateStampEnabled,
-      lastDateStampPosition: dateStampPosition,
-      lastDateStampFormat: dateStampFormat,
-    });
-    writeFile({
-      ...pickSettings(get()),
-      lastCaptionStyle: captionStyle,
-      lastVolume: volume,
-      lastDateStampEnabled: dateStampEnabled,
-      lastDateStampPosition: dateStampPosition,
-      lastDateStampFormat: dateStampFormat,
-    });
-  },
-}));
+    setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled }) =>
+      persist({
+        lastCaptionStyle: captionStyle,
+        lastVolume: volume,
+        lastDateStampEnabled: dateStampEnabled,
+      }),
+  };
+});
 
 export default useSettingsStore;

@@ -24,8 +24,12 @@ export const dusk: Theme = {
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
 
+    placeholderPrimary: '#A69488',
+    placeholderSecondary: '#7A6860',
+
     border:      'rgba(255,225,168,0.10)',
     borderFocus: '#E26D5C',
+    borderDark:  '#2A1A1C',
 
     success: '#C9CBA3',  // Dry Sage
     warning: '#FFE1A8',  // Soft Peach

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
@@ -14,22 +14,59 @@ type Props = {
 const THUMB = 20;
 const RAIL_H = 4;
 const HIT_H = 36;
+const COMMIT_THROTTLE_MS = 80;
 
 export function VolumePanel({ volume, onVolumeChange }: Props) {
   const [trackWidth, setTrackWidth] = useState(0);
   const trackWidthSV = useSharedValue(0);
   const volumeSV = useSharedValue(volume);
 
+  const throttleRef = useRef<{
+    last: number;
+    timer: ReturnType<typeof setTimeout> | null;
+    pending: number | null;
+  }>({ last: 0, timer: null, pending: null });
+
   useEffect(() => {
     volumeSV.value = volume; // stay in sync when volume changes from outside a drag (e.g. the mute tap)
   }, [volume, volumeSV]);
+
+  useEffect(() => {
+    return () => {
+      if (throttleRef.current.timer) clearTimeout(throttleRef.current.timer);
+    };
+  }, []);
+
+  // Leading+trailing throttle (mirrors useClipTrim's seekThrottled) so a drag doesn't re-render the whole editor tree every touch-move frame.
+  function commitVolume(v: number) {
+    const st = throttleRef.current;
+    const elapsed = Date.now() - st.last;
+    if (elapsed >= COMMIT_THROTTLE_MS) {
+      if (st.timer) { clearTimeout(st.timer); st.timer = null; }
+      st.pending = null;
+      st.last = Date.now();
+      onVolumeChange(v);
+      return;
+    }
+    st.pending = v;
+    if (!st.timer) {
+      st.timer = setTimeout(() => {
+        st.timer = null;
+        if (st.pending != null) {
+          st.last = Date.now();
+          onVolumeChange(st.pending);
+          st.pending = null;
+        }
+      }, COMMIT_THROTTLE_MS - elapsed);
+    }
+  }
 
   function handleLayout(e: { nativeEvent: { layout: { width: number } } }) {
     setTrackWidth(e.nativeEvent.layout.width);
     trackWidthSV.value = e.nativeEvent.layout.width;
   }
 
-  // Position is driven straight on the UI thread — no JS round trip per frame — so dragging tracks the finger exactly.
+  // Visual position is driven straight on the UI thread every frame; only the JS-side commit (audio volume, % label) is throttled.
   const pan = Gesture.Pan()
     .activeOffsetX([-2, 2])
     .failOffsetY([-10, 10])
@@ -37,13 +74,13 @@ export function VolumePanel({ volume, onVolumeChange }: Props) {
       "worklet";
       const v = Math.max(0, Math.min(1, e.x / (trackWidthSV.value || 1)));
       volumeSV.value = v;
-      scheduleOnRN(onVolumeChange, v);
+      scheduleOnRN(commitVolume, v);
     })
     .onUpdate((e) => {
       "worklet";
       const v = Math.max(0, Math.min(1, e.x / (trackWidthSV.value || 1)));
       volumeSV.value = v;
-      scheduleOnRN(onVolumeChange, v);
+      scheduleOnRN(commitVolume, v);
     });
 
   const fillStyle = useAnimatedStyle(() => ({

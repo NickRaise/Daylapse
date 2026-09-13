@@ -2,7 +2,6 @@ import { moods } from "@/db/schema";
 
 export type Mood = (typeof moods)[number];
 
-export type DateStampPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 export type DateStampFormat = "DD MMM" | "DD MMM YYYY" | "MMM DD, YYYY";
 
 export type CaptionSize = "sm" | "md" | "lg";
@@ -16,11 +15,6 @@ export type CaptionStyle = {
   bgColor: string;
   size: CaptionSize;
   position: CaptionPosition;
-};
-
-export type DateStampStyle = {
-  textColor: string;
-  bgColor: string;
 };
 
 /** Base ratio stored in settings; editor can flip portrait ↔ landscape */

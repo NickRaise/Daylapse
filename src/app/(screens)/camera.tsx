@@ -64,7 +64,7 @@ export default function Camera() {
         router.push("/editor");
       }
     });
-  }, [granted, useNativeCamera]);
+  }, [granted, useNativeCamera, videoQuality, recordingTimeLimit]);
 
   // When focus returns from editor and editor has cleared the pending media, dismiss camera too
   useFocusEffect(
@@ -89,6 +89,25 @@ export default function Camera() {
     sentToEditorRef.current = true;
     setPendingMedia({ uri, type, isLoading, ...dims });
     router.push("/editor");
+  }
+
+  // Shared by the tap-to-record and hold-to-record flows below.
+  async function recordVideo() {
+    if (!cameraRef.current) return;
+    try {
+      const result = await cameraRef.current.recordAsync(
+        recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined,
+      );
+      if (result?.uri) {
+        setPendingMedia({ uri: result.uri, type: "video", isLoading: false });
+      } else {
+        setPendingMedia(null);
+        sentToEditorRef.current = false;
+      }
+    } catch {
+      setPendingMedia(null);
+      sentToEditorRef.current = false;
+    }
   }
 
   async function handleCapture() {
@@ -119,18 +138,7 @@ export default function Camera() {
     setIsRecording(true);
     startTimer();
     try {
-      const result = await cameraRef.current.recordAsync(
-        recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined,
-      );
-      if (result?.uri) {
-        setPendingMedia({ uri: result.uri, type: "video", isLoading: false });
-      } else {
-        setPendingMedia(null);
-        sentToEditorRef.current = false;
-      }
-    } catch {
-      setPendingMedia(null);
-      sentToEditorRef.current = false;
+      await recordVideo();
     } finally {
       setIsRecording(false);
       stopTimer();
@@ -147,18 +155,7 @@ export default function Camera() {
     await waitForCameraReady();
     startTimer();
     try {
-      const result = await cameraRef.current.recordAsync(
-        recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined,
-      );
-      if (result?.uri) {
-        setPendingMedia({ uri: result.uri, type: "video", isLoading: false });
-      } else {
-        setPendingMedia(null);
-        sentToEditorRef.current = false;
-      }
-    } catch {
-      setPendingMedia(null);
-      sentToEditorRef.current = false;
+      await recordVideo();
     } finally {
       isHoldRecordingRef.current = false;
       setIsHoldRecording(false);

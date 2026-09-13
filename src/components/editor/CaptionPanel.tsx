@@ -1,8 +1,6 @@
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
 import { colors, fontSize, radius, spacing } from "@/theme";
-import type { CaptionPosition, CaptionSize, CaptionStyle, DateStampStyle } from "@/types";
-
-export type { CaptionPosition, CaptionSize, CaptionStyle, DateStampStyle };
+import type { CaptionStyle } from "@/types";
 
 const MAX_LEN = 120;
 const SWATCH = 42;

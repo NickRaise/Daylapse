@@ -24,8 +24,12 @@ export const vanilla: Theme = {
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
 
+    placeholderPrimary: '#96806F',
+    placeholderSecondary: '#B8A090',
+
     border:      '#D4CCB0',
     borderFocus: '#A98467',
+    borderDark:  '#6C584C',
 
     success: '#ADC178',  // Muted Olive
     warning: '#C4A467',

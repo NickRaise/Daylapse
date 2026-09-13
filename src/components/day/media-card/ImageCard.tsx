@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Image, Pressable, StyleSheet } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors } from "@/theme";
@@ -7,23 +8,30 @@ import { ActionsBar } from "./ActionsBar";
 type Props = {
   item: Media;
   optionsOpen: boolean;
-  onPress: () => void;
-  onToggleOptions: () => void;
+  onPress: (item: Media) => void;
+  onToggleOptions: (id: number) => void;
   onReorder: () => void;
-  onDelete: () => void;
+  onDelete: (id: number) => void;
 };
 
-export function ImageCard({ item, optionsOpen, onPress, onToggleOptions, onReorder, onDelete }: Props) {
+export const ImageCard = memo(function ImageCard({
+  item,
+  optionsOpen,
+  onPress,
+  onToggleOptions,
+  onReorder,
+  onDelete,
+}: Props) {
   return (
-    <Pressable style={s.card} onPress={onPress}>
+    <Pressable style={s.card} onPress={() => onPress(item)}>
       <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      <Pressable style={s.optionsBtn} hitSlop={12} onPress={onToggleOptions}>
+      <Pressable style={s.optionsBtn} hitSlop={12} onPress={() => onToggleOptions(item.id)}>
         <FontAwesomeFreeSolid name="sliders" size={22} color={colors.bgSurface} />
       </Pressable>
-      {optionsOpen && <ActionsBar onOpenReorder={onReorder} onDelete={onDelete} />}
+      {optionsOpen && <ActionsBar onOpenReorder={onReorder} onDelete={() => onDelete(item.id)} />}
     </Pressable>
   );
-}
+});
 
 const s = StyleSheet.create({
   card: {

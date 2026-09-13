@@ -26,18 +26,17 @@ import { EditorHeader } from "@/components/editor/EditorHeader";
 import { EditorTabBar } from "@/components/editor/EditorTabBar";
 import { EditorActions } from "@/components/editor/EditorActions";
 import { useEditorVideo } from "@/hooks/useEditorVideo";
+import { useEditorFit } from "@/hooks/useEditorFit";
+import { useCaptionEditor } from "@/hooks/useCaptionEditor";
 import { useEditorSave } from "@/hooks/useEditorSave";
 import { todayDateKey } from "@/utils/date";
-import type {
-  CaptionStyle,
-  DateStampFormat,
-  DateStampPosition,
-} from "@/types";
+import type { DateStampFormat } from "@/types";
 
 type Tab = "trim" | "text";
-type Fit = "landscape" | "portrait";
 
 const H_PAD = 16;
+// No UI can change this anymore (DateStampControl was removed as dead code) — fixed default.
+const DATE_STAMP_FORMAT: DateStampFormat = "DD MMM YYYY";
 
 const VIDEO_TABS = [
   { id: "trim" as Tab, icon: "scissors" as const, label: "Trim" },
@@ -54,44 +53,29 @@ export default function EditorScreen() {
   const lastCaptionStyle = useSettingsStore((s) => s.lastCaptionStyle);
   const lastVolume = useSettingsStore((s) => s.lastVolume);
   const lastDateStampEnabled = useSettingsStore((s) => s.lastDateStampEnabled);
-  const lastDateStampPosition = useSettingsStore(
-    (s) => s.lastDateStampPosition,
-  );
-  const lastDateStampFormat = useSettingsStore((s) => s.lastDateStampFormat);
 
   const isVideo = pendingMedia?.type === "video";
-  // Prefer the actual captured orientation over the aspect-ratio setting —
-  // a landscape photo/video should open in Landscape fit regardless of what
-  // frame shape the user last had selected, and vice versa.
-  const capturedFit: Fit | null =
-    pendingMedia?.width && pendingMedia?.height
-      ? pendingMedia.width > pendingMedia.height
-        ? "landscape"
-        : "portrait"
-      : null;
-  const initFit: Fit =
-    capturedFit ?? (defaultAspectRatio === "9:16" ? "portrait" : "landscape");
 
   const [activeTab, setActiveTab] = useState<Tab>("trim");
-  const [captionText, setCaptionText] = useState("");
-  const [captionStyle, setCaptionStyle] =
-    useState<CaptionStyle>(lastCaptionStyle);
-  const [fit, setFit] = useState<Fit>(initFit);
   const [volume, setVolume] = useState(lastVolume);
-  const [dateStampEnabled, setDateStampEnabled] =
-    useState(lastDateStampEnabled);
-  const [dateStampPosition] = useState<DateStampPosition>(
-    lastDateStampPosition,
-  );
-  const [dateStampFormat] = useState<DateStampFormat>(lastDateStampFormat);
-  const [captionResetToken, setCaptionResetToken] = useState(0);
-  const userToggledFitRef = useRef(false);
+
+  const {
+    captionText,
+    setCaptionText,
+    captionStyle,
+    setCaptionStyle,
+    dateStampEnabled,
+    setDateStampEnabled,
+    captionResetToken,
+    resetCaptionPosition,
+  } = useCaptionEditor({ lastCaptionStyle, lastDateStampEnabled });
 
   const {
     videoPlayer,
     videoDuration,
     videoSize,
     playheadSV,
+    trimRangeRef,
     setTrimRange,
   } = useEditorVideo({
     isVideo,
@@ -99,13 +83,13 @@ export default function EditorScreen() {
     volume,
   });
 
-  // An in-app recording has no known dimensions up front (recordAsync only
-  // returns a uri) — once the player resolves the real size, correct the
-  // landscape/portrait guess, unless the user has since toggled it manually.
-  useEffect(() => {
-    if (!isVideo || !videoSize || capturedFit || userToggledFitRef.current) return;
-    setFit(videoSize.width > videoSize.height ? "landscape" : "portrait");
-  }, [isVideo, videoSize, capturedFit]);
+  const { fit, toggleFit } = useEditorFit({
+    isVideo,
+    mediaWidth: pendingMedia?.width,
+    mediaHeight: pendingMedia?.height,
+    videoSize,
+    defaultAspectRatio,
+  });
 
   const { handleSave, isSaving } = useEditorSave({
     frameRef,
@@ -113,8 +97,8 @@ export default function EditorScreen() {
     captionStyle,
     volume,
     dateStampEnabled,
-    dateStampPosition,
-    dateStampFormat,
+    trimRangeRef,
+    videoDuration,
     onComplete: router.back,
   });
 
@@ -131,9 +115,7 @@ export default function EditorScreen() {
     (!isVideo || activeTab === "text") && captionText.length > 0;
 
   function handleRetake() {
-    // Don't clear pendingMedia here — camera.tsx auto-dismisses itself when it
-    // regains focus with pendingMedia null (used after a real Save), which
-    // would skip straight past the camera screen instead of returning to it.
+    // Not clearing pendingMedia here — camera.tsx auto-dismisses on focus once it's null, which would skip past the camera screen entirely.
     router.back();
   }
 
@@ -154,14 +136,7 @@ export default function EditorScreen() {
         style={s.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <EditorHeader
-          fit={fit}
-          onBack={handleRetake}
-          onToggleFit={() => {
-            userToggledFitRef.current = true;
-            setFit((f) => (f === "landscape" ? "portrait" : "landscape"));
-          }}
-        />
+        <EditorHeader fit={fit} onBack={handleRetake} onToggleFit={toggleFit} />
 
         <View style={s.frameWrap}>
           <MediaFrame
@@ -186,7 +161,7 @@ export default function EditorScreen() {
             {dateStampEnabled && (
               <DateStampOverlay
                 dateKey={dateKey}
-                format={dateStampFormat}
+                format={DATE_STAMP_FORMAT}
                 textColor={captionStyle.textColor}
                 bgColor={captionStyle.bgColor}
               />
@@ -198,11 +173,7 @@ export default function EditorScreen() {
             pointerEvents={captionDragMode ? "auto" : "none"}
           >
             <Text style={s.dragHint}>Drag the text to reposition</Text>
-            <Pressable
-              style={s.resetBtn}
-              onPress={() => setCaptionResetToken((n) => n + 1)}
-              hitSlop={16}
-            >
+            <Pressable style={s.resetBtn} onPress={resetCaptionPosition} hitSlop={16}>
               <FontAwesomeFreeSolid
                 name="arrow-rotate-left"
                 size={13}

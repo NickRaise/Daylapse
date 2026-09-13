@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { colors } from "@/theme";
 import type { Media } from "@/db/schema";
@@ -33,9 +33,31 @@ export function MediaPager({ mediaFiles, onAddPress, onDelete, onOpenReorder }: 
     setOpenOptionsId(null);
   };
 
-  function toggleOptions(id: number) {
+  // Stable callback identities (passed straight through, no per-item wrapper) so memoized cards skip re-rendering when only another card's options open.
+  const openOptionsIdRef = useRef<number | null>(openOptionsId);
+  openOptionsIdRef.current = openOptionsId;
+
+  const handleCardPress = useCallback((item: Media) => {
+    if (openOptionsIdRef.current === item.id) {
+      setOpenOptionsId(null);
+    } else {
+      setSelected({ uri: item.uri, type: item.type });
+    }
+  }, []);
+
+  const handleToggleOptions = useCallback((id: number) => {
     setOpenOptionsId((prev) => (prev === id ? null : id));
-  }
+  }, []);
+
+  const handleReorder = useCallback(() => {
+    setOpenOptionsId(null);
+    onOpenReorder();
+  }, [onOpenReorder]);
+
+  const handleDelete = useCallback((id: number) => {
+    setOpenOptionsId(null);
+    setConfirmDeleteId(id);
+  }, []);
 
   return (
     <View>
@@ -58,13 +80,10 @@ export function MediaPager({ mediaFiles, onAddPress, onDelete, onOpenReorder }: 
               <CardComponent
                 item={item}
                 optionsOpen={optionsOpen}
-                onPress={() => {
-                  if (optionsOpen) setOpenOptionsId(null);
-                  else setSelected({ uri: item.uri, type: item.type });
-                }}
-                onToggleOptions={() => toggleOptions(item.id)}
-                onReorder={() => { setOpenOptionsId(null); onOpenReorder(); }}
-                onDelete={() => { setOpenOptionsId(null); setConfirmDeleteId(item.id); }}
+                onPress={handleCardPress}
+                onToggleOptions={handleToggleOptions}
+                onReorder={handleReorder}
+                onDelete={handleDelete}
               />
             </View>
           );

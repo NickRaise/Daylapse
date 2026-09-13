@@ -45,6 +45,12 @@ export function JournalEditor({
     }
   }, [visible]);
 
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
   function handleTextChange(text: string) {
     onChange(text);
     if (debounceRef.current) clearTimeout(debounceRef.current);
