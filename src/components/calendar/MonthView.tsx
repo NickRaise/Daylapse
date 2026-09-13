@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import DayCell from './DayCell';
-import { colors, fontSize, spacing } from '../../theme';
+import { fontSize, makeStyles, spacing } from '../../theme';
 import {
   NUM_COLUMNS,
   CELL_GAP,
@@ -33,6 +33,7 @@ const MonthView = memo(function MonthView({
   thumbnails,
   onDayPress,
 }: MonthViewProps) {
+  const styles = useStyles();
   const { year, month: monthIdx, daysInMonth } = month;
   const rows = buildDayRows(daysInMonth, NUM_COLUMNS);
 
@@ -73,7 +74,7 @@ const MonthView = memo(function MonthView({
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   container: {
     paddingHorizontal: MONTH_H_PADDING,
     paddingBottom: spacing[8],
@@ -98,6 +99,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: CELL_GAP,
   },
-});
+}));
 
 export default MonthView;

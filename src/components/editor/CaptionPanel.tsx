@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import type { CaptionStyle } from "@/types";
 
 const MAX_LEN = 120;
@@ -24,6 +24,8 @@ type Props = {
 };
 
 export function CaptionPanel({ value, onChange, style, onStyleChange, dateEnabled, onDateToggle }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   function update(patch: Partial<CaptionStyle>) {
     onStyleChange({ ...style, ...patch });
   }
@@ -110,7 +112,7 @@ export function CaptionPanel({ value, onChange, style, onStyleChange, dateEnable
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { gap: spacing[3] },
 
   toggleRow: {
@@ -185,4 +187,4 @@ const s = StyleSheet.create({
     fontWeight: "700",
     lineHeight: 22,
   },
-});
+}));

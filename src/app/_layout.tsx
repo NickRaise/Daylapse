@@ -7,12 +7,14 @@ import useSettingsStore from "@/store/settings.store";
 import { useEffect, useState } from "react";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { ThemeProvider, useTheme } from "@/theme";
 
 const STACK_SCREEN_OPTIONS = { headerShown: false } as const;
 const FONTS = { Caveat: Caveat_400Regular } as const;
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(FONTS);
+  const theme = useSettingsStore((s) => s.theme);
 
   const [ready, setReady] = useState(false);
 
@@ -30,9 +32,17 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <StatusBar style="dark" />
-      <Stack screenOptions={STACK_SCREEN_OPTIONS} />
-    </GestureHandlerRootView>
+    <ThemeProvider name={theme}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ThemedStatusBar />
+        <Stack screenOptions={STACK_SCREEN_OPTIONS} />
+      </GestureHandlerRootView>
+    </ThemeProvider>
   );
+}
+
+// Light text on the dark theme, dark text on the rest.
+function ThemedStatusBar() {
+  const { isDark } = useTheme();
+  return <StatusBar style={isDark ? "light" : "dark"} />;
 }

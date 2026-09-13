@@ -1,4 +1,4 @@
-import { colors } from "@/theme";
+import { useColors } from "@/theme";
 import FontAwesomeFreeSolid, {
   FontAwesomeFreeSolidIconName,
 } from "@react-native-vector-icons/fontawesome-free-solid";
@@ -39,6 +39,7 @@ type Props = {
 };
 
 export default function FloatingActions({ onPlayPress }: Props) {
+  const colors = useColors();
   const ICON_SIZE = 80;
   const router = useRouter();
 

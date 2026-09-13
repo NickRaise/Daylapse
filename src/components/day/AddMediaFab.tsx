@@ -1,12 +1,14 @@
 import { Pressable, StyleSheet, Text } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 
 const H_PAD = 20;
 
 type Props = { onPress: () => void };
 
 export function AddMediaFab({ onPress }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <Pressable style={s.fab} onPress={onPress}>
       <FontAwesomeFreeSolid name="plus" size={14} color={colors.textOnAccent} />
@@ -15,7 +17,7 @@ export function AddMediaFab({ onPress }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   fab: {
     position: "absolute",
     bottom: 50,
@@ -38,4 +40,4 @@ const s = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
   },
-});
+}));

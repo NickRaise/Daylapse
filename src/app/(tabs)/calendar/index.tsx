@@ -17,7 +17,7 @@ import {
   MONTH_HEADER_HEIGHT,
   computeMonthHeight,
 } from "../../../components/calendar/layout";
-import { colors } from "../../../theme";
+import { makeStyles, useColors } from "../../../theme";
 import {
   generateMonths,
   getTodayKey,
@@ -40,6 +40,7 @@ function toDateKey(d: Date): string {
 }
 
 export default function CalendarScreen() {
+  const styles = useStyles();
   const today = useMemo(() => getTodayKey(), []);
   const todayTimestamp = useMemo(() => getTodayTimestamp(), []);
   const months = useMemo(
@@ -229,9 +230,9 @@ export default function CalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
   },
-});
+}));

@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 
 type Props = {
   onOpenReorder: () => void;
@@ -8,6 +8,8 @@ type Props = {
 };
 
 export function ActionsBar({ onOpenReorder, onDelete }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <View style={s.actionsBar}>
       <View style={s.pill}>
@@ -24,7 +26,7 @@ export function ActionsBar({ onOpenReorder, onDelete }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   actionsBar: {
     position: "absolute",
     bottom: 14,
@@ -63,4 +65,4 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-});
+}));

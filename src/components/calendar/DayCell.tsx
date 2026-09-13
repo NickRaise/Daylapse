@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Text, Pressable, StyleSheet, View } from "react-native";
 import { CELL_SIZE } from "./layout";
-import { colors, radius } from "../../theme";
+import { makeStyles, radius, useColors } from "../../theme";
 import { MediaThumbnail, type MediaKind } from "../media/MediaThumbnail";
 
 type DayCellProps = {
@@ -27,6 +27,8 @@ const DayCell = memo(function DayCell({
   thumbnailType,
   onPress,
 }: DayCellProps) {
+  const styles = useStyles();
+  const colors = useColors();
   const hasThumbnail = !!thumbnailUri && !isFuture;
 
   const cellStyle = [
@@ -93,7 +95,7 @@ const DayCell = memo(function DayCell({
   );
 });
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   cell: {
     width: CELL_SIZE,
     height: CELL_SIZE,
@@ -169,6 +171,6 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-});
+}));
 
 export default DayCell;

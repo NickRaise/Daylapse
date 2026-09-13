@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, spacing } from "@/theme";
+import { fontSize, makeStyles, spacing, useColors } from "@/theme";
 
 type FAIconName = React.ComponentProps<typeof FontAwesomeFreeSolid>["name"];
 
@@ -21,6 +21,8 @@ export function EditorTabBar<T extends string>({
   activeTab,
   onTabChange,
 }: Props<T>) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <View style={s.tabBar}>
       {tabs.map(({ id, icon, label }) => {
@@ -43,7 +45,7 @@ export function EditorTabBar<T extends string>({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   tabBar: {
     flexDirection: "row",
     borderTopWidth: 1,
@@ -68,4 +70,4 @@ const s = StyleSheet.create({
     borderRadius: 1,
     backgroundColor: colors.primary,
   },
-});
+}));

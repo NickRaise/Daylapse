@@ -3,7 +3,7 @@ import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-so
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
-import { colors, radius, spacing, fontSize } from "../../theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "../../theme";
 import { formatDuration } from "../../utils/time";
 
 const MODE_ROW_PAD = spacing[1];
@@ -40,6 +40,9 @@ export function CameraControls({
   onGallery,
   onFlip,
 }: Props) {
+  const s = useStyles();
+  const t = useTextStyles();
+  const colors = useColors();
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // tracks what the current press gesture means
   const pressStateRef = useRef<"idle" | "pending" | "holding" | "video-tap">("idle");
@@ -180,7 +183,7 @@ export function CameraControls({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   panel: {
     backgroundColor: colors.bg,
     paddingTop: spacing[5],
@@ -267,9 +270,9 @@ const s = StyleSheet.create({
     width: 28,
     height: 28,
   },
-});
+}));
 
-const t = StyleSheet.create({
+const useTextStyles = makeStyles((colors) => ({
   modeChipText: {
     fontSize: fontSize.sm,
     fontWeight: "600",
@@ -299,4 +302,4 @@ const t = StyleSheet.create({
     fontWeight: "500",
     color: colors.textMuted,
   },
-});
+}));

@@ -3,7 +3,7 @@ import { Image, Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import Sortable from "react-native-sortables";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import type { Media } from "@/db/schema";
 
 type Props = {
@@ -14,6 +14,8 @@ type Props = {
 };
 
 export function ReorderModal({ visible, mediaFiles, onSave, onCancel }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const [data, setData] = useState<Media[]>(mediaFiles);
 
   useEffect(() => {
@@ -93,7 +95,7 @@ export function ReorderModal({ visible, mediaFiles, onSave, onCancel }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   overlay: {
     flex: 1,
     justifyContent: "flex-end",
@@ -184,4 +186,4 @@ const s = StyleSheet.create({
     fontWeight: "600",
     color: colors.bg,
   },
-});
+}));

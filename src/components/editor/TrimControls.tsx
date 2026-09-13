@@ -5,7 +5,7 @@ import Animated, {
   type SharedValue,
 } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, spacing } from "@/theme";
+import { fontSize, makeStyles, spacing, useColors } from "@/theme";
 import { fmt } from "@/utils/time";
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -65,6 +65,8 @@ export function TrimControls({
   onStepBack,
   onStepForward,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const stepBack = useHoldToRepeat(onStepBack);
   const stepForward = useHoldToRepeat(onStepForward);
 
@@ -123,7 +125,7 @@ export function TrimControls({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   controls: { flexDirection: "row", alignItems: "center" },
   controlsSide: { flex: 1, justifyContent: "center", alignItems: "flex-end" },
   btnGroup: { flexDirection: "row", alignItems: "center", gap: spacing[3] },
@@ -164,4 +166,4 @@ const s = StyleSheet.create({
     includeFontPadding: false,
   },
   timeSep: { color: colors.textMuted },
-});
+}));

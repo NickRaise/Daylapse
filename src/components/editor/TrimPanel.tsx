@@ -4,7 +4,7 @@ import { ScrollView, GestureDetector } from "react-native-gesture-handler";
 import { Image } from "expo-image";
 import Animated, { type SharedValue } from "react-native-reanimated";
 import type { VideoPlayer } from "expo-video";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import { useClipTrim } from "@/hooks/useClipTrim";
 import { useThumbnails, THUMB_COUNT } from "@/hooks/useThumbnails";
 import { TrimControls } from "@/components/editor/TrimControls";
@@ -31,6 +31,7 @@ export function TrimPanel({
   onRangeChange,
   playheadSV,
 }: Props) {
+  const s = useStyles();
   const [viewportW, setViewportW] = useState(0);
   const [isPlaying, setIsPlaying] = useState(player.playing);
   const scrollRef = useRef<ScrollView>(null);
@@ -136,7 +137,7 @@ export function TrimPanel({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { gap: 12 },
 
   timelineContainer: { height: STRIP_H },
@@ -212,4 +213,4 @@ const s = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
-});
+}));

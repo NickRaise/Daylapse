@@ -1,6 +1,6 @@
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 
 type Props = {
   visible: boolean;
@@ -17,6 +17,8 @@ export function DeleteConfirmModal({
   onConfirm,
   onCancel,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={s.backdrop} onPress={onCancel}>
@@ -40,7 +42,7 @@ export function DeleteConfirmModal({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   backdrop: {
     flex: 1,
     backgroundColor: "rgba(63,52,40,0.45)",
@@ -110,6 +112,6 @@ const s = StyleSheet.create({
   btnDeleteText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#fff",
+    color: colors.textOnAccent,
   },
-});
+}));

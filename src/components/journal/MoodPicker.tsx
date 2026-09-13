@@ -1,6 +1,6 @@
-import { ComponentType } from "react";
+import { ComponentType, useMemo } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { colors, fontSize, spacing } from "../../theme";
+import { fontSize, makeStyles, spacing, useColors, type ThemeColors } from "../../theme";
 import {
   HappyEmoji,
   CalmEmoji,
@@ -20,7 +20,7 @@ type MoodConfig = {
   Component: ComponentType<EmojiProps>;
 };
 
-const MOODS: MoodConfig[] = [
+const moodsFor = (colors: ThemeColors): MoodConfig[] => [
   {
     key: "happy",
     label: "Happy",
@@ -64,6 +64,10 @@ type Props = {
 };
 
 export function MoodPicker({ value, onChange }: Props) {
+  const s = useStyles();
+  const colors = useColors();
+  const MOODS = useMemo(() => moodsFor(colors), [colors]);
+
   function handlePress(key: Mood) {
     onChange(value === key ? null : key);
   }
@@ -99,7 +103,7 @@ export function MoodPicker({ value, onChange }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     width: "100%",
     gap: spacing[4],
@@ -127,4 +131,4 @@ const s = StyleSheet.create({
   itemLabelSelected: {
     color: colors.textPrimary,
   },
-});
+}));

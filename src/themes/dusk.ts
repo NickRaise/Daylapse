@@ -19,15 +19,15 @@ export const dusk: Theme = {
 
     textPrimary:   '#FFE1A8',  // Soft Peach
     textSecondary: '#C9CBA3',  // Dry Sage
-    textMuted:     '#8A7870',
+    textMuted:     '#A89689',
     textDisabled:  '#5C4840',
-    textOnAccent:    '#FFFFFF',
-    textOnAccentDim: 'rgba(255,255,255,0.65)',
+    textOnAccent:    '#2E1B1E',
+    textOnAccentDim: 'rgba(46,27,30,0.70)',
 
     placeholderPrimary: '#A69488',
     placeholderSecondary: '#7A6860',
 
-    border:      'rgba(255,225,168,0.10)',
+    border:      'rgba(255,225,168,0.20)',
     borderFocus: '#E26D5C',
     borderDark:  '#2A1A1C',
 

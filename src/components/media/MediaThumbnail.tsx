@@ -3,7 +3,7 @@ import { StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
 import * as VideoThumbnails from "expo-video-thumbnails";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, radius } from "@/theme";
+import { makeStyles, radius, useColors } from "@/theme";
 
 export type MediaKind = "image" | "video";
 
@@ -30,6 +30,8 @@ type Props = {
 
 // Renders a photo directly, or a lazily-generated (and cached) poster frame for a video.
 export const MediaThumbnail = memo(function MediaThumbnail({ uri, type }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const [posterUri, setPosterUri] = useState<string | null>(type === "image" ? uri : null);
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export const MediaThumbnail = memo(function MediaThumbnail({ uri, type }: Props)
   );
 });
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   // Rounded here rather than relying on the parent's overflow clip, which Android ignores on elevated cards.
   image: { width: "100%", height: "100%", borderRadius: radius.md },
   placeholder: {
@@ -74,4 +76,4 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-});
+}));

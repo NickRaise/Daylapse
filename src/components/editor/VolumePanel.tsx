@@ -4,7 +4,7 @@ import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, { useAnimatedStyle, useSharedValue } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, spacing } from "@/theme";
+import { fontSize, makeStyles, spacing, useColors } from "@/theme";
 
 type Props = {
   volume: number; // 0–1
@@ -17,6 +17,8 @@ const HIT_H = 36;
 const COMMIT_THROTTLE_MS = 80;
 
 export function VolumePanel({ volume, onVolumeChange }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const [trackWidth, setTrackWidth] = useState(0);
   const trackWidthSV = useSharedValue(0);
   const volumeSV = useSharedValue(volume);
@@ -120,7 +122,7 @@ export function VolumePanel({ volume, onVolumeChange }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     gap: spacing[3],
   },
@@ -184,4 +186,4 @@ const s = StyleSheet.create({
     lineHeight: 16,
     fontStyle: "italic",
   },
-});
+}));

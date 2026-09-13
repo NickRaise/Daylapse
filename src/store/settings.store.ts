@@ -1,12 +1,15 @@
 import { create } from "zustand";
 import { File, Paths } from "expo-file-system";
 import type { AspectRatio, CaptionStyle } from "@/types";
+import { readStoredTheme, type ThemeName } from "@/theme";
 
 const settingsFile = new File(Paths.document, "app-settings.json");
 
 export type VideoQuality = "low" | "medium" | "high";
 
 type Settings = {
+  // Appearance
+  theme: ThemeName;
   // Camera
   saveToGallery: boolean;
   videoQuality: VideoQuality;
@@ -32,6 +35,7 @@ type SettingsState = Settings & {
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
   setKeepOriginalMedia: (value: boolean) => Promise<void>;
+  setTheme: (value: ThemeName) => Promise<void>;
   setLastEditorPrefs: (prefs: {
     captionStyle: CaptionStyle;
     volume: number;
@@ -41,6 +45,7 @@ type SettingsState = Settings & {
 };
 
 const DEFAULTS: Settings = {
+  theme: readStoredTheme(),
   saveToGallery: false,
   videoQuality: "high",
   useNativeCamera: false,
@@ -78,6 +83,7 @@ async function writeFile(data: Settings) {
 
 function pickSettings(state: SettingsState): Settings {
   return {
+    theme: state.theme,
     saveToGallery: state.saveToGallery,
     videoQuality: state.videoQuality,
     useNativeCamera: state.useNativeCamera,
@@ -113,6 +119,8 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setRecordingTimeLimit: async (value) => persist({ recordingTimeLimit: value }),
     setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
     setKeepOriginalMedia: async (value) => persist({ keepOriginalMedia: value }),
+
+    setTheme: async (value) => persist({ theme: value }),
 
     setLastEditorPrefs: async ({ captionStyle, volume, dateStampEnabled, photoDuration }) =>
       persist({

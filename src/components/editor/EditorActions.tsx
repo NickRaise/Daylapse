@@ -5,7 +5,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 
 type Props = {
   onRetake: () => void;
@@ -14,6 +14,8 @@ type Props = {
 };
 
 export function EditorActions({ onRetake, onSave, isSaving }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <View style={s.actions}>
       <Pressable style={[s.btn, s.btnSecondary]} onPress={onRetake}>
@@ -34,7 +36,7 @@ export function EditorActions({ onRetake, onSave, isSaving }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   actions: {
     flexDirection: "row",
     gap: spacing[3],
@@ -68,4 +70,4 @@ const s = StyleSheet.create({
     fontWeight: "600",
     color: colors.textOnAccent,
   },
-});
+}));

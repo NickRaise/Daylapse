@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, spacing } from "@/theme";
+import { fontSize, makeStyles, spacing, useColors } from "@/theme";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
 import { MediaFrame, frameSize } from "@/components/editor/MediaFrame";
@@ -47,6 +47,8 @@ const VIDEO_TABS = [
 ];
 
 export default function EditorScreen() {
+  const s = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const { width: screenW } = useWindowDimensions();
   const frameRef = useRef<View>(null);
@@ -287,7 +289,7 @@ export default function EditorScreen() {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { flex: 1, backgroundColor: colors.bg },
   flex: { flex: 1 },
   burnOffscreen: { position: "absolute", left: -100000, top: 0 },
@@ -346,4 +348,4 @@ const s = StyleSheet.create({
     backgroundColor: colors.border,
     marginVertical: spacing[4],
   },
-});
+}));

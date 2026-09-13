@@ -1,7 +1,8 @@
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import { StyleSheet, Text, View } from "react-native";
 
 export default function SuggestionSection({ dateKey }: { dateKey: string }) {
+  const styles = useStyles();
   return (
     <View style={styles.root}>
       {/*Render media taken today, if any */}
@@ -18,7 +19,7 @@ export default function SuggestionSection({ dateKey }: { dateKey: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     width: "100%",
     minHeight: 50,
@@ -33,4 +34,4 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
   },
-});
+}));

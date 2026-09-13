@@ -8,9 +8,9 @@ export const blossom: Theme = {
   isDark: false,
   ...base,
   colors: {
-    primary:      '#FFAFCC',  // Blush Pop
-    primaryLight: '#FFD0E3',
-    primaryDark:  '#E888AA',
+    primary:      '#C14E7C',  // Deep Blush
+    primaryLight: '#FFAFCC',
+    primaryDark:  '#9C3A61',
 
     bg:           '#FFF5F9',  // near-white blush tint
     bgSurface:    '#FFFFFF',
@@ -19,7 +19,7 @@ export const blossom: Theme = {
 
     textPrimary:   '#4A2545',
     textSecondary: '#7A5070',
-    textMuted:     '#AA8098',
+    textMuted:     '#8A6278',
     textDisabled:  '#D4B8CA',
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
@@ -33,7 +33,7 @@ export const blossom: Theme = {
 
     success: '#A8D8B0',
     warning: '#FFD9A0',
-    error:   '#E8889A',
+    error:   '#C0455C',
     info:    '#A2D2FF',  // Sky Blue
 
     recordedDay: '#CDB4DB',  // Pink Orchid

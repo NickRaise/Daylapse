@@ -8,9 +8,9 @@ export const vanilla: Theme = {
   isDark: false,
   ...base,
   colors: {
-    primary:      '#A98467',  // Faded Copper
-    primaryLight: '#C4A387',
-    primaryDark:  '#8C6B4F',
+    primary:      '#7B5A3F',  // Deep Copper
+    primaryLight: '#A98467',
+    primaryDark:  '#5E4430',
 
     bg:           '#F0EAD2',  // Vanilla Cream
     bgSurface:    '#FAFAF2',
@@ -18,8 +18,8 @@ export const vanilla: Theme = {
     bgSubtle:     '#E8EDD0',
 
     textPrimary:   '#6C584C',  // Ash Brown
-    textSecondary: '#8A7465',
-    textMuted:     '#A89080',
+    textSecondary: '#6E5B4C',
+    textMuted:     '#7F6C5C',
     textDisabled:  '#C8B8A8',
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
@@ -33,7 +33,7 @@ export const vanilla: Theme = {
 
     success: '#ADC178',  // Muted Olive
     warning: '#C4A467',
-    error:   '#C47060',
+    error:   '#A94A3A',
     info:    '#7AAFC4',
 
     recordedDay: '#ADC178',  // Muted Olive

@@ -11,7 +11,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useEffect, useRef, useState } from "react";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "../../theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "../../theme";
 
 type Props = {
   visible: boolean;
@@ -28,6 +28,8 @@ export function JournalEditor({
   onClose,
   dateLabel,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const insets = useSafeAreaInsets();
 
   const historyRef = useRef<string[]>([]);
@@ -178,7 +180,7 @@ export function JournalEditor({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   modalWrap: {
     flex: 1,
     backgroundColor: "transparent",
@@ -274,4 +276,4 @@ const s = StyleSheet.create({
     fontSize: fontSize.xs,
     color: colors.textMuted,
   },
-});
+}));

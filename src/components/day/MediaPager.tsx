@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react";
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import type { Media } from "@/db/schema";
 import { AddMemoryCard } from "./AddMemoryCard";
 import { ImageCard } from "./media-card/ImageCard";
@@ -21,6 +21,7 @@ type Props = {
 type Selected = { uri: string; type: "image" | "video" } | null;
 
 export function MediaPager({ mediaFiles, onAddPress, onDelete, onOpenReorder }: Props) {
+  const s = useStyles();
   const { width: screenWidth } = useWindowDimensions();
   const [activePage, setActivePage] = useState(0);
   const [selected, setSelected] = useState<Selected>(null);
@@ -119,7 +120,7 @@ export function MediaPager({ mediaFiles, onAddPress, onDelete, onOpenReorder }: 
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -146,4 +147,4 @@ const s = StyleSheet.create({
   dotAddActive: {
     color: colors.textSecondary,
   },
-});
+}));

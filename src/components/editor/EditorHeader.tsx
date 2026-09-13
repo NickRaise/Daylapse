@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 
 type Fit = "landscape" | "portrait";
 
@@ -11,6 +11,8 @@ type Props = {
 };
 
 export function EditorHeader({ fit, onBack, onToggleFit }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <View style={s.header}>
       <Pressable style={s.iconBtn} onPress={onBack} hitSlop={12}>
@@ -37,7 +39,7 @@ export function EditorHeader({ fit, onBack, onToggleFit }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -76,4 +78,4 @@ const s = StyleSheet.create({
     fontWeight: "500",
     color: colors.textSecondary,
   },
-});
+}));

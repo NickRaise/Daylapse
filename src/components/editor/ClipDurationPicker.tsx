@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { colors, fontSize, spacing } from "@/theme";
+import { fontSize, makeStyles, spacing, useColors } from "@/theme";
 
 const PRESET_DURATIONS = [1, 3, 5, 10] as const;
 
@@ -19,6 +19,8 @@ export function ClipDurationPicker({
   label = "Clip",
   showSummary = true,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const [isCustom, setIsCustom] = useState(false);
   const [customText, setCustomText] = useState("");
   // Tracks which preset the user picked, separate from the (possibly clamped) applied duration.
@@ -93,7 +95,7 @@ export function ClipDurationPicker({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   clipDurLabel: {
     textAlign: "center",
     fontSize: fontSize.base,
@@ -136,4 +138,4 @@ const s = StyleSheet.create({
     textAlign: "center",
     padding: 0,
   },
-});
+}));

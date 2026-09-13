@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { formatDateKey, MONTH_NAMES } from "@/components/calendar/utils";
 
 const WEEKDAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
@@ -14,6 +14,8 @@ type Props = {
 
 // Weekday-aligned single-month grid (unlike the main Calendar tab's 3-column photo grid) — the traditional shape expected for picking a date range.
 export function MiniCalendarPicker({ startKey, endKey, onSelectDay }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const initial = startKey ? new Date(startKey) : new Date();
   const [viewYear, setViewYear] = useState(initial.getFullYear());
   const [viewMonth, setViewMonth] = useState(initial.getMonth());
@@ -91,7 +93,7 @@ export function MiniCalendarPicker({ startKey, endKey, onSelectDay }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { gap: spacing[2] },
   header: {
     flexDirection: "row",
@@ -147,4 +149,4 @@ const s = StyleSheet.create({
     color: colors.textOnAccent,
     fontWeight: "700",
   },
-});
+}));

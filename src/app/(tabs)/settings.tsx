@@ -1,5 +1,7 @@
-import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
-import { colors, spacing } from "@/theme";
+import { useState } from "react";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { DEFAULT_THEME, makeStyles, spacing, THEME_ORDER, useColors, type ThemeName } from "@/theme";
+import { themes } from "@/themes";
 import useSettingsStore, { VideoQuality } from "@/store/settings.store";
 import type { AspectRatio } from "@/types";
 
@@ -25,6 +27,23 @@ const TIME_LIMIT_OPTIONS: { label: string; value: number | null }[] = [
 ];
 
 export default function Settings() {
+  const s = useStyles();
+  const colors = useColors();
+  const theme = useSettingsStore((s) => s.theme);
+  const setTheme = useSettingsStore((s) => s.setTheme);
+  const [pendingTheme, setPendingTheme] = useState<ThemeName | null>(null);
+
+  // Repainting every screen blocks the JS thread, so the spinner has to reach the screen first.
+  function pickTheme(key: ThemeName) {
+    if (pendingTheme || key === theme) return;
+    setPendingTheme(key);
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        setTheme(key);
+        setPendingTheme(null);
+      }, 0);
+    });
+  }
   const saveToGallery = useSettingsStore((s) => s.saveToGallery);
   const setSaveToGallery = useSettingsStore((s) => s.setSaveToGallery);
   const videoQuality = useSettingsStore((s) => s.videoQuality);
@@ -42,11 +61,65 @@ export default function Settings() {
     <ScrollView style={s.root} contentContainerStyle={s.content}>
       <Text style={s.heading}>Settings</Text>
 
-      <Text style={s.sectionLabel}>Camera</Text>
+      <Text style={s.sectionLabel}>The mood</Text>
       <View style={s.section}>
         <View style={s.settingBlock}>
-          <Text style={s.rowTitle}>Video quality</Text>
-          <Text style={s.rowDesc}>Affects file size of captured photos and videos.</Text>
+          <View style={s.titleRow}>
+            <Text style={s.rowTitle}>Colours of your days</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeText}>Experimental</Text>
+            </View>
+          </View>
+          <Text style={s.rowDesc}>Pick the palette Daylapse wears while you keep your days.</Text>
+
+          <View style={s.themeRow}>
+            {THEME_ORDER.map((key: ThemeName) => {
+              const preview = themes[key];
+              const active = theme === key;
+              const waiting = pendingTheme === key;
+              return (
+                <Pressable
+                  key={key}
+                  style={[
+                    s.themeCard,
+                    active && s.themeCardActive,
+                    pendingTheme !== null && !waiting && s.themeCardDimmed,
+                  ]}
+                  onPress={() => pickTheme(key)}
+                  disabled={pendingTheme !== null}
+                >
+                  <View style={[s.swatch, { backgroundColor: preview.colors.bg }]}>
+                    {waiting ? (
+                      <ActivityIndicator size="small" color={preview.colors.primary} />
+                    ) : (
+                      <>
+                        <View style={[s.swatchInk, { backgroundColor: preview.colors.primary }]} />
+                        <View style={[s.swatchInkSmall, { backgroundColor: preview.colors.textPrimary }]} />
+                      </>
+                    )}
+                  </View>
+                  <Text style={[s.themeName, active && s.themeNameActive]} numberOfLines={1}>
+                    {preview.name}
+                  </Text>
+                  {key === DEFAULT_THEME && <Text style={s.themeTag}>Default</Text>}
+                </Pressable>
+              );
+            })}
+          </View>
+
+          <Text style={s.note}>
+            {pendingTheme
+              ? "Repainting every corner…"
+              : "The whole app changes as you tap. This one is still finding its feet, so tell us if a corner somewhere still wears the old colours."}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={s.sectionLabel}>Capturing</Text>
+      <View style={s.section}>
+        <View style={s.settingBlock}>
+          <Text style={s.rowTitle}>How richly to capture</Text>
+          <Text style={s.rowDesc}>Richer moments hold more detail, and take more room on your phone.</Text>
           <View style={s.pills}>
             {QUALITY_OPTIONS.map(({ label, value }) => (
               <Pressable
@@ -66,9 +139,9 @@ export default function Settings() {
 
         <View style={s.row}>
           <View style={s.rowText}>
-            <Text style={s.rowTitle}>Use native camera</Text>
+            <Text style={s.rowTitle}>Use your phone's camera</Text>
             <Text style={s.rowDesc}>
-              Opens your phone's built-in camera app instead of the in-app one.
+              Opens the camera app you already know, instead of the one in here.
             </Text>
           </View>
           <Switch
@@ -82,8 +155,8 @@ export default function Settings() {
         <View style={s.divider} />
 
         <View style={s.settingBlock}>
-          <Text style={s.rowTitle}>Recording time limit</Text>
-          <Text style={s.rowDesc}>Automatically stops video recording after the chosen duration.</Text>
+          <Text style={s.rowTitle}>Stop recording after</Text>
+          <Text style={s.rowDesc}>Long enough to catch the moment, then it stops on its own.</Text>
           <View style={s.pills}>
             {TIME_LIMIT_OPTIONS.map(({ label, value }) => (
               <Pressable
@@ -100,12 +173,12 @@ export default function Settings() {
         </View>
       </View>
 
-      <Text style={s.sectionLabel}>Editor</Text>
+      <Text style={s.sectionLabel}>Composing</Text>
       <View style={s.section}>
         <View style={s.settingBlock}>
-          <Text style={s.rowTitle}>Default frame ratio</Text>
+          <Text style={s.rowTitle}>Shape of the frame</Text>
           <Text style={s.rowDesc}>
-            Starting aspect ratio when the editor opens. You can flip between portrait and landscape per capture.
+            How the editor opens. You can still turn any single moment between tall and wide.
           </Text>
           <View style={s.pills}>
             {ASPECT_RATIO_OPTIONS.map(({ label, value, desc }) => (
@@ -126,13 +199,13 @@ export default function Settings() {
         </View>
       </View>
 
-      <Text style={s.sectionLabel}>Storage</Text>
+      <Text style={s.sectionLabel}>Keeping</Text>
       <View style={s.section}>
         <View style={s.row}>
           <View style={s.rowText}>
-            <Text style={s.rowTitle}>Save to gallery</Text>
+            <Text style={s.rowTitle}>Also keep in your gallery</Text>
             <Text style={s.rowDesc}>
-              Photos and videos will also be saved to your device gallery.
+              Every moment you save is tucked into your phone's gallery too.
             </Text>
           </View>
           <Switch
@@ -147,10 +220,10 @@ export default function Settings() {
 
         <View style={s.row}>
           <View style={s.rowText}>
-            <Text style={s.rowTitle}>Keep original for re-editing</Text>
+            <Text style={s.rowTitle}>Keep the untouched version</Text>
             <Text style={s.rowDesc}>
-              Captions and the date stamp are always burned into the saved photo or video.
-              Turn this on to additionally keep the unedited original, so it can be re-edited later.
+              Your words and the date are woven into whatever you save. Keep the original alongside it
+              and you can always come back and tell it differently.
             </Text>
           </View>
           <Switch
@@ -162,15 +235,15 @@ export default function Settings() {
         </View>
         <Text style={s.note}>
           {keepOriginalMedia
-            ? "Original is also saved — can be re-edited later."
-            : "Only the edited version is saved — uses less storage."}
+            ? "The untouched moment is kept too — you can always rework it."
+            : "Only the moment as you made it is kept — lighter on space."}
         </Text>
       </View>
     </ScrollView>
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -207,6 +280,84 @@ const s = StyleSheet.create({
   settingBlock: {
     gap: 8,
     paddingVertical: 2,
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  badgeText: {
+    fontSize: 10,
+    fontWeight: "700",
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  themeRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 4,
+  },
+  themeCard: {
+    width: 62,
+    alignItems: "center",
+    gap: 5,
+    padding: 5,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: "transparent",
+  },
+  themeCardActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.bg,
+  },
+  swatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 4,
+  },
+  swatchInk: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  swatchInkSmall: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  themeCardDimmed: { opacity: 0.4 },
+  themeTag: {
+    fontSize: 9,
+    fontWeight: "600",
+    color: colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginTop: -2,
+  },
+  themeName: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: colors.textSecondary,
+  },
+  themeNameActive: {
+    color: colors.textPrimary,
+    fontWeight: "700",
   },
   row: {
     flexDirection: "row",
@@ -267,7 +418,7 @@ const s = StyleSheet.create({
     marginTop: 1,
   },
   pillDescActive: {
-    color: "rgba(255,255,255,0.75)",
+    color: colors.textOnAccentDim,
   },
   note: {
     marginTop: 10,
@@ -276,4 +427,4 @@ const s = StyleSheet.create({
     color: colors.textMuted,
     lineHeight: 17,
   },
-});
+}));

@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import Animated, { FadeIn, FadeOut, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, radius, spacing } from "@/theme";
+import { makeStyles, radius, spacing, useColors } from "@/theme";
 import type { Montage } from "@/db/schema";
 import { formatDuration } from "@/utils/time";
 import { MediaThumbnail, getVideoPoster } from "@/components/media/MediaThumbnail";
@@ -25,6 +25,8 @@ export const MontageCard = memo(function MontageCard({
   onPress,
   onLongPress,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   const [posterReady, setPosterReady] = useState(false);
 
   useEffect(() => {
@@ -113,7 +115,7 @@ export const MontageCard = memo(function MontageCard({
   );
 });
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   outer: {
     flexGrow: 0,
     flexShrink: 0,
@@ -176,4 +178,4 @@ const s = StyleSheet.create({
   // Caveat ships in a single weight — setting fontWeight here would drop Android back to the system font.
   titleText: { fontFamily: "Caveat", fontSize: 19, lineHeight: 21, color: "#fff" },
   subtitleText: { fontFamily: "Caveat", fontSize: 15, lineHeight: 16, color: "rgba(255,255,255,0.85)" },
-});
+}));

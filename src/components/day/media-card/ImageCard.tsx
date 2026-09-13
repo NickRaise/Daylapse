@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { Image, Pressable, StyleSheet } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import type { Media } from "@/db/schema";
 import { ActionsBar } from "./ActionsBar";
 
@@ -22,6 +22,8 @@ export const ImageCard = memo(function ImageCard({
   onReorder,
   onDelete,
 }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <Pressable style={s.card} onPress={() => onPress(item)}>
       <Image source={{ uri: item.uri }} style={StyleSheet.absoluteFill} resizeMode="cover" />
@@ -33,7 +35,7 @@ export const ImageCard = memo(function ImageCard({
   );
 });
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   card: {
     flex: 1,
     borderRadius: 18,
@@ -45,4 +47,4 @@ const s = StyleSheet.create({
     right: 10,
     padding: 6,
   },
-});
+}));

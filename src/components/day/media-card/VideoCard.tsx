@@ -2,7 +2,7 @@ import { memo, useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { useVideoPlayer } from "expo-video";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 import type { Media } from "@/db/schema";
 import { formatDuration } from "@/utils/time";
 import { ActionsBar } from "./ActionsBar";
@@ -24,6 +24,7 @@ export const VideoCard = memo(function VideoCard({
   onReorder,
   onDelete,
 }: Props) {
+  const s = useStyles();
   const [duration, setDuration] = useState<number | null>(item.duration ?? null);
 
   // Only spins up a real (off-screen) decoder when the duration isn't already known.
@@ -50,14 +51,14 @@ export const VideoCard = memo(function VideoCard({
         </View>
       )}
       <Pressable style={s.optionsBtn} hitSlop={12} onPress={() => onToggleOptions(item.id)}>
-        <FontAwesomeFreeSolid name="sliders" size={22} color={colors.textOnAccent} />
+        <FontAwesomeFreeSolid name="sliders" size={22} color="#fff" />
       </Pressable>
       {optionsOpen && <ActionsBar onOpenReorder={onReorder} onDelete={() => onDelete(item.id)} />}
     </Pressable>
   );
 });
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   card: {
     flex: 1,
     borderRadius: 18,
@@ -91,4 +92,4 @@ const s = StyleSheet.create({
     right: 10,
     padding: 6,
   },
-});
+}));

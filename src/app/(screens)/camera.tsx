@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useCallback, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
-import { colors } from "../../theme";
+import { makeStyles, useColors } from "../../theme";
 import { CameraPermission } from "../../components/camera/CameraPermission";
 import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls } from "../../components/camera/CameraControls";
@@ -16,6 +16,7 @@ import { useRecordingTimer } from "@/hooks/useRecordingTimer";
 import { useCameraReady } from "@/hooks/useCameraReady";
 
 export default function Camera() {
+  const s = useStyles();
   const cameraRef = useRef<CameraView>(null);
   const router = useRouter();
   const isHoldRecordingRef = useRef(false);
@@ -209,9 +210,9 @@ export default function Camera() {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
   },
-});
+}));

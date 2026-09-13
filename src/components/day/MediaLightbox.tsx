@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Image, Modal, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { formatDuration } from "@/utils/time";
 
 type Selected = { uri: string; type: "image" | "video" } | null;
@@ -13,6 +13,7 @@ type Props = {
 };
 
 function VideoLightbox({ uri }: { uri: string }) {
+  const s = useStyles();
   const { width, height } = useWindowDimensions();
   const [muted, setMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -53,7 +54,7 @@ function VideoLightbox({ uri }: { uri: string }) {
         <FontAwesomeFreeSolid
           name={muted ? "volume-xmark" : "volume-high"}
           size={16}
-          color={colors.textOnAccent}
+          color="#fff"
         />
       </Pressable>
 
@@ -67,6 +68,7 @@ function VideoLightbox({ uri }: { uri: string }) {
 }
 
 export function MediaLightbox({ selected, onClose }: Props) {
+  const s = useStyles();
   const { width, height } = useWindowDimensions();
   return (
     <Modal
@@ -84,14 +86,14 @@ export function MediaLightbox({ selected, onClose }: Props) {
           <VideoLightbox uri={selected.uri} />
         ) : null}
         <Pressable style={s.closeBtn} onPress={onClose}>
-          <FontAwesomeFreeSolid name="xmark" size={18} color={colors.textOnAccent} />
+          <FontAwesomeFreeSolid name="xmark" size={18} color="#fff" />
         </Pressable>
       </View>
     </Modal>
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   lightbox: {
     flex: 1,
     backgroundColor: "#000",
@@ -135,4 +137,4 @@ const s = StyleSheet.create({
     color: colors.bg,
     fontVariant: ["tabular-nums"],
   },
-});
+}));

@@ -2,7 +2,7 @@ import { CameraView, CameraType, CameraMode } from "expo-camera";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { RefObject } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { colors, radius, spacing, fontSize } from "../../theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "../../theme";
 
 type Props = {
   cameraRef: RefObject<CameraView | null>;
@@ -23,6 +23,9 @@ export function CameraViewfinder({
   onClose,
   onOpenNativeCamera,
 }: Props) {
+  const s = useStyles();
+  const t = useTextStyles();
+  const colors = useColors();
   return (
     <View style={s.wrapper}>
       <CameraView
@@ -53,7 +56,7 @@ export function CameraViewfinder({
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   wrapper: {
     flex: 1,
     overflow: "hidden",
@@ -103,9 +106,9 @@ const s = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: colors.error,
   },
-});
+}));
 
-const t = StyleSheet.create({
+const useTextStyles = makeStyles((colors) => ({
   closeBtnText: {
     fontSize: fontSize.base,
     fontWeight: "600",
@@ -117,4 +120,4 @@ const t = StyleSheet.create({
     color: colors.error,
     letterSpacing: 1,
   },
-});
+}));

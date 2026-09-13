@@ -5,7 +5,7 @@ import { File } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library/legacy";
 import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { MontageRepository } from "@/repositories/montage.repository";
 import type { Montage } from "@/db/schema";
 import { MontageCard } from "@/components/montage/MontageCard";
@@ -27,6 +27,8 @@ const CARD_WIDTH = Math.floor(
 );
 
 export default function Gallery() {
+  const s = useStyles();
+  const colors = useColors();
   const [montages, setMontages] = useState<Montage[]>([]);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
@@ -244,7 +246,7 @@ export default function Gallery() {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { flex: 1, backgroundColor: colors.bg },
   header: {
     paddingHorizontal: spacing[5],
@@ -383,4 +385,4 @@ const s = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
-});
+}));

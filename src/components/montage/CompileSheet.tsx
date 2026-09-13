@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { formatDateKey } from "@/components/calendar/utils";
 import { MiniCalendarPicker } from "@/components/montage/MiniCalendarPicker";
 import { montageLabelText } from "@/components/montage/montageLabel";
@@ -36,6 +36,7 @@ function thisYearRange(): CompileRange {
 }
 
 export function CompileSheet({ visible, onClose, onCompile }: Props) {
+  const s = useStyles();
   const [preset, setPreset] = useState<PresetId>("month");
   const [rangeStart, setRangeStart] = useState<string | null>(null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
@@ -116,7 +117,7 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   overlay: { flex: 1, justifyContent: "flex-end" },
   backdrop: { ...StyleSheet.absoluteFill, backgroundColor: "rgba(0,0,0,0.45)" },
   sheet: {
@@ -168,4 +169,4 @@ const s = StyleSheet.create({
   },
   compileBtnDisabled: { opacity: 0.4 },
   compileBtnText: { fontSize: fontSize.base, fontWeight: "700", color: colors.textOnAccent },
-});
+}));

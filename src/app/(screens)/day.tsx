@@ -1,4 +1,4 @@
-import { colors, spacing } from "@/theme";
+import { makeStyles, spacing, useColors } from "@/theme";
 import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo } from "react";
@@ -21,6 +21,7 @@ import { useOpenCamera } from "@/hooks/useOpenCamera";
 const H_PAD = 20;
 
 export default function DayScreen() {
+  const styles = useStyles();
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
   const { dayName, formattedDate } = parseDateKey(dateKey as string);
   const openCamera = useOpenCamera();
@@ -110,7 +111,7 @@ export default function DayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -149,4 +150,4 @@ const styles = StyleSheet.create({
     marginHorizontal: H_PAD,
     marginTop: 12,
   },
-});
+}));

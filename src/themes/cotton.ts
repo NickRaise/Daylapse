@@ -8,9 +8,9 @@ export const cotton: Theme = {
   isDark: false,
   ...base,
   colors: {
-    primary:      '#EDAFB8',  // Cherry Blossom
-    primaryLight: '#F5CFD5',
-    primaryDark:  '#CC8A96',
+    primary:      '#AB5865',  // Deep Cherry
+    primaryLight: '#EDAFB8',
+    primaryDark:  '#8E4A55',
 
     bg:           '#FAF5F2',  // warm near-white
     bgSurface:    '#FFFFFF',
@@ -18,8 +18,8 @@ export const cotton: Theme = {
     bgSubtle:     '#DEDBD2',  // Dust Grey
 
     textPrimary:   '#4A5759',  // Iron Grey
-    textSecondary: '#6E7F81',
-    textMuted:     '#95A5A6',
+    textSecondary: '#4E6264',
+    textMuted:     '#697C7E',
     textDisabled:  '#C4CCCD',
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
@@ -27,13 +27,13 @@ export const cotton: Theme = {
     placeholderPrimary: '#7E8F91',
     placeholderSecondary: '#A5B3B4',
 
-    border:      'rgba(176,196,177,0.4)',
+    border:      'rgba(126,150,128,0.55)',
     borderFocus: '#EDAFB8',
     borderDark:  '#4A5759',
 
     success: '#B0C4B1',  // Ash Grey (green cast)
     warning: '#F0C490',
-    error:   '#EDAFB8',  // Cherry Blossom
+    error:   '#B0453E',  // Clay Red
     info:    '#A8C4D4',
 
     recordedDay: '#EDAFB8',  // Cherry Blossom

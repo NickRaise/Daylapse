@@ -8,9 +8,9 @@ export const sage: Theme = {
   isDark: false,
   ...base,
   colors: {
-    primary:      '#D4A373',  // Light Bronze
-    primaryLight: '#E7C7A6',
-    primaryDark:  '#B88758',
+    primary:      '#9A6A38',  // Deep Bronze
+    primaryLight: '#D4A373',
+    primaryDark:  '#754F27',
 
     bg:           '#FEFAE0',  // Cornsilk
     bgSurface:    '#FFFFFF',
@@ -19,7 +19,7 @@ export const sage: Theme = {
 
     textPrimary:   '#3F3428',
     textSecondary: '#6F6558',
-    textMuted:     '#9B9288',
+    textMuted:     '#7D7466',
     textDisabled:  '#8A8178',
     textOnAccent:    '#FFFFFF',
     textOnAccentDim: 'rgba(255,255,255,0.65)',
@@ -27,14 +27,14 @@ export const sage: Theme = {
     placeholderPrimary: '#72685E',
     placeholderSecondary: '#8A8178',
 
-    border:      '#E4DFC8',
+    border:      '#DCD4B6',
     borderFocus: '#D4A373',
     borderDark:  '#3F3428',
 
 
     success: '#88A97A',
     warning: '#D4A373',
-    error:   '#D97A6C',
+    error:   '#B04A3C',
     info:    '#8DA9C4',
 
     recordedDay: '#CCD5AE',  // Dry Sage

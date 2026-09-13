@@ -1,11 +1,12 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { colors, radius, spacing, fontSize } from "../../theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "../../theme";
 
 type Props = {
   onRequest: () => void;
 };
 
 export function CameraPermission({ onRequest }: Props) {
+  const s = useStyles();
   return (
     <View style={s.root}>
       <View style={s.content}>
@@ -29,7 +30,7 @@ export function CameraPermission({ onRequest }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
@@ -83,4 +84,4 @@ const s = StyleSheet.create({
     fontWeight: "600",
     color: colors.textOnAccent,
   },
-});
+}));

@@ -1,6 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 
 type Props = {
   text: string;
@@ -9,6 +9,8 @@ type Props = {
 };
 
 export function DayJournalRow({ text, isLoading, onPress }: Props) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <Pressable style={s.journalRow} onPress={onPress}>
       {isLoading ? (
@@ -30,7 +32,7 @@ export function DayJournalRow({ text, isLoading, onPress }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   journalRow: {
     marginHorizontal: 20,
     marginVertical: 12,
@@ -56,4 +58,4 @@ const s = StyleSheet.create({
     color: colors.textPrimary,
     fontStyle: "normal",
   },
-});
+}));

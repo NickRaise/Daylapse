@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from "react-native";
-import { colors } from "@/theme";
+import { makeStyles, useColors } from "@/theme";
 
 type Props = {
   formattedDate: string;
@@ -7,6 +7,7 @@ type Props = {
 };
 
 export function DayHeader({ formattedDate, dayName }: Props) {
+  const s = useStyles();
   return (
     <View style={s.header}>
       <View>
@@ -17,7 +18,7 @@ export function DayHeader({ formattedDate, dayName }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   header: {
     paddingHorizontal: 20,
     flexDirection: "row",
@@ -37,4 +38,4 @@ const s = StyleSheet.create({
     fontSize: 22,
     color: colors.textSecondary,
   },
-});
+}));

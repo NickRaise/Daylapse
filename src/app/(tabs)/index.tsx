@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import FontAwesomeFreeSolid, {
   type FontAwesomeFreeSolidIconName,
 } from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { useHomeData } from "@/hooks/useHomeData";
 import { useOpenCamera } from "@/hooks/useOpenCamera";
 import useEntryStore from "@/store/entry.store";
@@ -29,6 +29,8 @@ type QuickActionProps = {
 };
 
 function QuickAction({ icon, label, onPress }: QuickActionProps) {
+  const s = useStyles();
+  const colors = useColors();
   return (
     <Pressable style={s.quickItem} onPress={onPress}>
       <View style={s.quickIconWrap}>
@@ -40,6 +42,8 @@ function QuickAction({ icon, label, onPress }: QuickActionProps) {
 }
 
 export default function Home() {
+  const s = useStyles();
+  const colors = useColors();
   const router = useRouter();
   const openCamera = useOpenCamera();
   const data = useHomeData();
@@ -184,7 +188,7 @@ export default function Home() {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: { flex: 1, backgroundColor: colors.bg },
   content: {
     paddingHorizontal: spacing[5],
@@ -319,4 +323,4 @@ const s = StyleSheet.create({
   },
 
   montageRow: { flexDirection: "row", gap: spacing[3] },
-});
+}));

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Image, Modal, Pressable, StatusBar, StyleSheet, Text, useWindowDimensions, View } from "react-native";
 import { FontAwesomeFreeSolid } from "@react-native-vector-icons/fontawesome-free-solid";
 import { useVideoPlayer, VideoView } from "expo-video";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import type { SlideshowMedia } from "@/repositories/media.repository";
 
 // Fallback for media saved before per-photo duration existed (its `duration` column is null).
@@ -14,6 +14,7 @@ type Props = {
 };
 
 export function SlideshowPlayer({ media, onClose }: Props) {
+  const s = useStyles();
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
   const photoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -86,7 +87,7 @@ export function SlideshowPlayer({ media, onClose }: Props) {
         ) : null}
 
         <Pressable style={s.closeBtn} onPress={onClose}>
-          <FontAwesomeFreeSolid name="xmark" size={18} color={colors.textOnAccent} />
+          <FontAwesomeFreeSolid name="xmark" size={18} color="#fff" />
         </Pressable>
 
         {current && (
@@ -97,7 +98,7 @@ export function SlideshowPlayer({ media, onClose }: Props) {
   );
 }
 
-const s = StyleSheet.create({
+const useStyles = makeStyles((colors) => ({
   root: {
     flex: 1,
     backgroundColor: "#000",
@@ -121,10 +122,10 @@ const s = StyleSheet.create({
     alignSelf: "center",
     fontSize: fontSize.sm,
     fontWeight: "600",
-    color: colors.textOnAccent,
+    color: "#fff",
     backgroundColor: colors.overlay,
     paddingHorizontal: spacing[3],
     paddingVertical: 6,
     borderRadius: radius.md,
   },
-});
+}));
