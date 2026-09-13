@@ -71,7 +71,8 @@
         "expo-file-system"
       ],
       "expo-image",
-      "expo-web-browser"
+      "expo-web-browser",
+      "./plugins/withFfmpegKitFix.js"
     ],
     "experiments": {
       "typedRoutes": true,

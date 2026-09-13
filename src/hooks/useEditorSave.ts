@@ -7,6 +7,7 @@ import { mediaService } from "@/service/media.service";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
 import useSettingsStore from "@/store/settings.store";
+import { toFileUri } from "@/utils/fileUri";
 import type { CaptionStyle } from "@/types";
 import type { TrimRange } from "@/components/editor/TrimPanel";
 
@@ -46,11 +47,6 @@ export function useEditorSave({
   const setLastEditorPrefs = useSettingsStore((s) => s.setLastEditorPrefs);
 
   const [isSaving, setIsSaving] = useState(false);
-
-  // react-native-video-trim returns a plain filesystem path, not a file:// URI like expo-file-system expects.
-  function toFileUri(path: string): string {
-    return /^[a-z]+:\/\//i.test(path) ? path : `file://${path}`;
-  }
 
   // Skips the (re-encoding) trim step entirely when the user never shortened the clip.
   async function trimIfNeeded(uri: string): Promise<string> {

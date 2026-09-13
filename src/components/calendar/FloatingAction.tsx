@@ -34,7 +34,11 @@ const RenderIcon = ({
   );
 };
 
-export default function FloatingActions() {
+type Props = {
+  onPlayPress: () => void;
+};
+
+export default function FloatingActions({ onPlayPress }: Props) {
   const ICON_SIZE = 80;
   const router = useRouter();
 
@@ -45,6 +49,14 @@ export default function FloatingActions() {
 
   return (
     <View className={styles.container}>
+      <Pressable onPress={onPlayPress}>
+        <RenderIcon
+          name="play-circle"
+          size={ICON_SIZE}
+          color={colors.textPrimary}
+          bgColor="white"
+        />
+      </Pressable>
       <Pressable onPress={handleAddPress}>
         <RenderIcon
           name="plus-circle"

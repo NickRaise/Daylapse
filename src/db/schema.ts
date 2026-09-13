@@ -29,5 +29,18 @@ export const media = sqliteTable("media", {
     .$default(() => new Date()),
 });
 
+export const montages = sqliteTable("montages", {
+  id: integer().primaryKey({ autoIncrement: true }),
+  title: text(),
+  dateRangeStart: text("date_range_start").notNull(),
+  dateRangeEnd: text("date_range_end").notNull(),
+  outputUri: text("output_uri").notNull(),
+  duration: integer(), // Total seconds of the compiled output
+  createdAt: integer({ mode: "timestamp" })
+    .notNull()
+    .$default(() => new Date()),
+});
+
 export type Media = typeof media.$inferSelect;
 export type Entry = typeof entries.$inferSelect;
+export type Montage = typeof montages.$inferSelect;

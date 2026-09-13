@@ -1,7 +1,15 @@
 import { useRef, useMemo, useCallback, useEffect, useState } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
-import { FlatList, View, StyleSheet, LayoutChangeEvent } from "react-native";
+import {
+  FlatList,
+  View,
+  StyleSheet,
+  LayoutChangeEvent,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from "react-native";
 import MonthView from "../../../components/calendar/MonthView";
+import { SlideshowPlayer } from "../../../components/calendar/SlideshowPlayer";
 import {
   NUM_COLUMNS,
   CELL_SIZE,
@@ -14,11 +22,12 @@ import {
   generateMonths,
   getTodayKey,
   getTodayTimestamp,
+  formatDateKey,
   type MonthData,
 } from "../../../components/calendar/utils";
 import FloatingActions from "@/components/calendar/FloatingAction";
 import useEntryStore from "@/store/entry.store";
-import { MediaRepository } from "@/repositories/media.repository";
+import { MediaRepository, type SlideshowMedia } from "@/repositories/media.repository";
 
 const PAST_MONTHS = 60; // ~5 years back
 const FUTURE_MONTHS = 3; // 3 months ahead
@@ -80,6 +89,9 @@ export default function CalendarScreen() {
 
   const listRef = useRef<FlatList<MonthData>>(null);
   const containerHeightRef = useRef(0);
+  // Updated on every scroll (no re-render needed — only read when Play is tapped).
+  const visibleMonthIndexRef = useRef(PAST_MONTHS);
+  const [slideshowMedia, setSlideshowMedia] = useState<SlideshowMedia[] | null>(null);
 
   const scrollToToday = useCallback(() => {
     const containerH = containerHeightRef.current;
@@ -129,6 +141,36 @@ export default function CalendarScreen() {
     [router],
   );
 
+  // Binary-searches the precomputed offsets to find whichever month is at the top of the viewport right now.
+  const handleScroll = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const y = e.nativeEvent.contentOffset.y;
+      let lo = 0;
+      let hi = offsets.length - 1;
+      let idx = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (offsets[mid] <= y) {
+          idx = mid;
+          lo = mid + 1;
+        } else {
+          hi = mid - 1;
+        }
+      }
+      visibleMonthIndexRef.current = idx;
+    },
+    [offsets],
+  );
+
+  const handlePlayPress = useCallback(async () => {
+    const month = months[visibleMonthIndexRef.current];
+    if (!month) return;
+    const start = formatDateKey(month.year, month.month, 1);
+    const end = formatDateKey(month.year, month.month, month.daysInMonth);
+    const items = await MediaRepository.getMediaByDateRange(start, end);
+    if (items.length > 0) setSlideshowMedia(items);
+  }, [months]);
+
   const renderItem = useCallback(
     ({ item }: { item: MonthData }) => (
       <MonthView
@@ -164,6 +206,8 @@ export default function CalendarScreen() {
         initialScrollIndex={PAST_MONTHS}
         getItemLayout={getItemLayout}
         showsVerticalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
         windowSize={5}
         maxToRenderPerBatch={5}
         initialNumToRender={5}
@@ -172,7 +216,9 @@ export default function CalendarScreen() {
       />
 
       {/* Floating action icon - Play & Add */}
-      <FloatingActions />
+      <FloatingActions onPlayPress={handlePlayPress} />
+
+      <SlideshowPlayer media={slideshowMedia} onClose={() => setSlideshowMedia(null)} />
     </View>
   );
 }

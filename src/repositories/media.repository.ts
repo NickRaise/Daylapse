@@ -4,6 +4,8 @@ import { Media, media, entries } from "@/db/schema";
 import { and, eq, gte, lte } from "drizzle-orm";
 import { runQuery } from "@/repositories/util";
 
+export type SlideshowMedia = Media & { entryDate: string };
+
 export class MediaRepository {
   static async addMedia(data: IMedia): Promise<number | null> {
     return runQuery("media.addMedia", async () => {
@@ -37,6 +39,32 @@ export class MediaRepository {
       await db.delete(media).where(eq(media.id, id));
       return true;
     }, false);
+  }
+
+  // Flat, ordered sequence of every media item across a date range — for the Play slideshow and (later) Compile.
+  static async getMediaByDateRange(
+    startDate: string,
+    endDate: string,
+  ): Promise<SlideshowMedia[]> {
+    return runQuery("media.getMediaByDateRange", async () => {
+      const rows = await db
+        .select({
+          id: media.id,
+          entryId: media.entryId,
+          type: media.type,
+          uri: media.uri,
+          caption: media.caption,
+          duration: media.duration,
+          order: media.order,
+          createdAt: media.createdAt,
+          entryDate: entries.date,
+        })
+        .from(entries)
+        .innerJoin(media, eq(media.entryId, entries.id))
+        .where(and(gte(entries.date, startDate), lte(entries.date, endDate)))
+        .orderBy(entries.date, media.order);
+      return rows;
+    }, []);
   }
 
   static async getFirstMediaByDateRange(

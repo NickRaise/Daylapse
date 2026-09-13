@@ -1,7 +1,7 @@
 import { CameraView, CameraType, CameraMode } from "expo-camera";
 // TODO (dev build): switch to "expo-media-library" (non-legacy) and replace createAssetAsync → Asset.create()
 import * as ImagePicker from "expo-image-picker";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { View, StyleSheet } from "react-native";
 import { useFocusEffect, useRouter } from "expo-router";
 import { colors } from "../../theme";
@@ -10,11 +10,10 @@ import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls } from "../../components/camera/CameraControls";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
+import { PHOTO_QUALITY } from "@/constants/media";
 import { useMediaPermissions } from "@/hooks/useMediaPermissions";
 import { useRecordingTimer } from "@/hooks/useRecordingTimer";
 import { useCameraReady } from "@/hooks/useCameraReady";
-
-const PHOTO_QUALITY = { low: 0.5, medium: 0.75, high: 0.9 } as const;
 
 export default function Camera() {
   const cameraRef = useRef<CameraView>(null);
@@ -26,10 +25,7 @@ export default function Camera() {
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
 
   const videoQuality = useSettingsStore((state) => state.videoQuality);
-  const useNativeCamera = useSettingsStore((state) => state.useNativeCamera);
   const recordingTimeLimit = useSettingsStore((state) => state.recordingTimeLimit);
-
-  const nativeCameraLaunchedRef = useRef(false);
 
   const [facing, setFacing] = useState<CameraType>("back");
   const [mode, setMode] = useState<CameraMode>("picture");
@@ -41,30 +37,6 @@ export default function Camera() {
   const { loading, granted, request } = useMediaPermissions();
   const { duration: recordingDuration, startTimer, stopTimer } = useRecordingTimer();
   const { waitForCameraReady, handleCameraReady } = useCameraReady();
-
-  // Auto-launch native camera if setting is enabled
-  useEffect(() => {
-    if (!granted || !useNativeCamera || nativeCameraLaunchedRef.current) return;
-    nativeCameraLaunchedRef.current = true;
-    ImagePicker.launchCameraAsync({
-      mediaTypes: ["images", "videos"],
-      quality: PHOTO_QUALITY[videoQuality],
-      videoMaxDuration: recordingTimeLimit ?? 300,
-    }).then((result) => {
-      if (result.canceled) { router.back(); return; }
-      const asset = result.assets[0];
-      if (asset) {
-        sentToEditorRef.current = true;
-        setPendingMedia({
-          uri: asset.uri,
-          type: asset.type === "video" ? "video" : "photo",
-          width: asset.width,
-          height: asset.height,
-        });
-        router.push("/editor");
-      }
-    });
-  }, [granted, useNativeCamera, videoQuality, recordingTimeLimit]);
 
   // When focus returns from editor and editor has cleared the pending media, dismiss camera too
   useFocusEffect(
