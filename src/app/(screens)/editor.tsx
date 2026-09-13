@@ -147,7 +147,7 @@ export default function EditorScreen() {
       <View style={s.loadingRoot}>
         <ActivityIndicator size="large" color={colors.primary} />
         <Text style={s.loadingText}>
-          {pendingMedia?.isLoading ? "Processing video…" : "Loading…"}
+          {pendingMedia?.isLoading ? "Getting your moment ready…" : "One moment…"}
         </Text>
       </View>
     );

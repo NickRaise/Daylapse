@@ -87,7 +87,7 @@ export default function Gallery() {
     if (!mediaPermission?.granted) {
       const result = await requestMediaPermission();
       if (!result.granted) {
-        Alert.alert("Permission needed", "Allow media access to save montages to your gallery.");
+        Alert.alert("Permission needed", "Allow media access to keep your stories in your gallery.");
         return;
       }
     }
@@ -97,12 +97,14 @@ export default function Gallery() {
       for (const montage of chosen) await MediaLibrary.createAssetAsync(montage.outputUri);
       setSelectedIds([]);
       Alert.alert(
-        "Saved to gallery",
-        chosen.length === 1 ? "1 montage was saved." : `${chosen.length} montages were saved.`,
+        "Kept safe",
+        chosen.length === 1
+          ? "Your story is now in your gallery."
+          : `${chosen.length} stories are now in your gallery.`,
       );
     } catch (error) {
       console.error("[gallery] export failed:", error);
-      Alert.alert("Export failed", "Those montages couldn't be saved to your gallery.");
+      Alert.alert("Couldn't keep it", "Your stories couldn't be saved to your gallery.");
     } finally {
       if (aliveRef.current) setExporting(false);
     }
@@ -126,11 +128,11 @@ export default function Gallery() {
       {/* The selection bar sits on top of the header rather than replacing it, so swapping the two can't shift the grid. */}
       <View>
         <View style={s.header}>
-          <Text style={s.headerTitle}>Montages</Text>
+          <Text style={s.headerTitle}>Your stories</Text>
           <Text style={s.headerSubtitle}>
             {montages.length === 0
-              ? "Your compiled videos will show up here"
-              : `${montages.length} compiled video${montages.length === 1 ? "" : "s"}`}
+              ? "The stories you weave will live here"
+              : `${montages.length} ${montages.length === 1 ? "story" : "stories"} from your days`}
           </Text>
         </View>
 
@@ -163,12 +165,12 @@ export default function Gallery() {
           <View style={s.emptyIconWrap}>
             <FontAwesomeFreeSolid name="clapperboard" size={26} color={colors.primary} />
           </View>
-          <Text style={s.emptyTitle}>No montages yet</Text>
+          <Text style={s.emptyTitle}>No stories yet</Text>
           <Text style={s.emptyText}>
-            Compile your daily photos and videos into one shareable video.
+            Gather the days you've kept and weave them into something you can watch back.
           </Text>
           <Pressable style={s.emptyCta} onPress={() => setSheetVisible(true)}>
-            <Text style={s.emptyCtaText}>Compile your first montage</Text>
+            <Text style={s.emptyCtaText}>Weave your first story</Text>
           </Pressable>
         </View>
       ) : (
@@ -211,11 +213,11 @@ export default function Gallery() {
 
       <DeleteConfirmModal
         visible={confirmDelete}
-        title={selectedIds.length === 1 ? "Delete montage?" : `Delete ${selectedIds.length} montages?`}
+        title={selectedIds.length === 1 ? "Unravel this story?" : `Unravel ${selectedIds.length} stories?`}
         body={
           singleSelected
-            ? `${montageLabelText(singleSelected.dateRangeStart, singleSelected.dateRangeEnd)} is removed for good. The photos and videos it was made from stay in your entries.`
-            : "These compiled videos are removed for good. The photos and videos they were made from stay in your entries."
+            ? `${montageLabelText(singleSelected.dateRangeStart, singleSelected.dateRangeEnd)} will be gone for good. The days it was woven from stay safe in your entries.`
+            : "These stories will be gone for good. The days they were woven from stay safe in your entries."
         }
         onConfirm={handleDeleteSelected}
         onCancel={() => setConfirmDelete(false)}
@@ -233,8 +235,8 @@ export default function Gallery() {
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={s.progressText}>
             {progress.stage === "converting"
-              ? `Preparing ${progress.current}/${progress.total}…`
-              : "Merging…"}
+              ? `Gathering day ${progress.current} of ${progress.total}…`
+              : "Weaving them together…"}
           </Text>
         </View>
       )}

@@ -3,6 +3,7 @@ import { Modal, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors, fontSize, radius, spacing } from "@/theme";
 import { formatDateKey } from "@/components/calendar/utils";
 import { MiniCalendarPicker } from "@/components/montage/MiniCalendarPicker";
+import { montageLabelText } from "@/components/montage/montageLabel";
 
 export type CompileRange = { start: string; end: string; title: string };
 
@@ -69,7 +70,7 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
         <Pressable style={s.backdrop} onPress={onClose} />
         <View style={s.sheet}>
           <View style={s.handle} />
-          <Text style={s.title}>Compile a montage</Text>
+          <Text style={s.title}>Weave a story</Text>
 
           <View style={s.presetRow}>
             {(["month", "year", "custom"] as PresetId[]).map((p) => (
@@ -79,7 +80,7 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
                 onPress={() => setPreset(p)}
               >
                 <Text style={[s.presetText, preset === p && s.presetTextActive]}>
-                  {p === "month" ? "This Month" : p === "year" ? "This Year" : "Custom"}
+                  {p === "month" ? "This month" : p === "year" ? "This year" : "Choose days"}
                 </Text>
               </Pressable>
             ))}
@@ -89,10 +90,10 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
             <View style={s.customRow}>
               <Text style={s.hint}>
                 {!rangeStart
-                  ? "Tap a day to start"
+                  ? "Tap the day it begins"
                   : !rangeEnd
-                    ? "Tap another day to set the end"
-                    : `${rangeStart} – ${rangeEnd}`}
+                    ? "Now tap the day it ends"
+                    : montageLabelText(rangeStart, rangeEnd)}
               </Text>
               <MiniCalendarPicker
                 startKey={rangeStart}
@@ -107,7 +108,7 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
             onPress={handleCompile}
             disabled={preset === "custom" && !customValid}
           >
-            <Text style={s.compileBtnText}>Compile</Text>
+            <Text style={s.compileBtnText}>Weave it</Text>
           </Pressable>
         </View>
       </View>

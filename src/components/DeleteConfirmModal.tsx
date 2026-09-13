@@ -12,8 +12,8 @@ type Props = {
 
 export function DeleteConfirmModal({
   visible,
-  title = "Delete media?",
-  body = "This photo or video will be permanently removed from this entry.",
+  title = "Let this go?",
+  body = "This moment will be gone from the day for good.",
   onConfirm,
   onCancel,
 }: Props) {

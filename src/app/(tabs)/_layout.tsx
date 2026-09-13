@@ -19,7 +19,7 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf="calendar" md="calendar_month" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="gallery">
-        <NativeTabs.Trigger.Label>Gallery</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Stories</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon sf="photo.on.rectangle.angled" md="photo_library" />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
