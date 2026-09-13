@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { MediaRepository } from "@/repositories/media.repository";
 import type { Media } from "@/db/schema";
@@ -6,11 +6,17 @@ import type { Media } from "@/db/schema";
 export function useEntryMedia(entryId: number | null) {
   const [mediaFiles, setMediaFiles] = useState<Media[]>([]);
   const [reorderVisible, setReorderVisible] = useState(false);
+  const aliveRef = useRef(true);
+  useEffect(() => () => {
+    aliveRef.current = false;
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
       if (entryId !== null) {
-        MediaRepository.getMediaByEntry(entryId).then(setMediaFiles);
+        MediaRepository.getMediaByEntry(entryId).then((result) => {
+          if (aliveRef.current) setMediaFiles(result);
+        });
       }
     }, [entryId]),
   );

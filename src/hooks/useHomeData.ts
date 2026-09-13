@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { EntryRepository } from "@/repositories/entry.repository";
 import { MediaRepository, type MediaThumbnailRef } from "@/repositories/media.repository";
@@ -45,6 +45,7 @@ function dateKeyDaysAgo(daysAgo: number): string {
 // Powers the Home tab: streak/entry stats, today's status, a latest-entry preview, a recent-days strip, and a montages teaser.
 export function useHomeData(): HomeData {
   const [data, setData] = useState<HomeData>(EMPTY_DATA);
+  const aliveRef = useRef(true);
 
   const refresh = useCallback(async () => {
     const todayKey = todayDateKey();
@@ -83,6 +84,7 @@ export function useHomeData(): HomeData {
 
     const latestThumbnail = latestEntry ? (thumbnails[latestEntry.date] ?? null) : null;
 
+    if (!aliveRef.current) return;
     setData({
       loading: false,
       todayKey,
@@ -97,6 +99,10 @@ export function useHomeData(): HomeData {
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+
+  useEffect(() => () => {
+    aliveRef.current = false;
+  }, []);
 
   return data;
 }

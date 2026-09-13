@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Dimensions, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { File } from "expo-file-system";
@@ -7,6 +7,7 @@ import { colors, fontSize, radius, spacing } from "@/theme";
 import { MontageRepository } from "@/repositories/montage.repository";
 import type { Montage } from "@/db/schema";
 import { MontageCard } from "@/components/montage/MontageCard";
+import { montageLabelText } from "@/components/montage/montageLabel";
 import { CompileSheet, type CompileRange } from "@/components/montage/CompileSheet";
 import { MediaLightbox } from "@/components/day/MediaLightbox";
 import { compileMontage, type CompileProgress } from "@/service/montage.service";
@@ -27,6 +28,10 @@ export default function Gallery() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
   const [progress, setProgress] = useState<CompileProgress | null>(null);
+  const aliveRef = useRef(true);
+  useEffect(() => () => {
+    aliveRef.current = false;
+  }, []);
 
   // A montage whose output file is missing (e.g. a compile that failed partway) shouldn't linger as a broken card.
   const refresh = useCallback(async () => {
@@ -39,13 +44,13 @@ export default function Gallery() {
         MontageRepository.deleteMontage(m.id);
       }
     }
-    setMontages(valid);
+    if (aliveRef.current) setMontages(valid);
   }, []);
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
   function handleLongPress(montage: Montage) {
-    Alert.alert("Delete montage?", montage.title ?? `${montage.dateRangeStart} – ${montage.dateRangeEnd}`, [
+    Alert.alert("Delete montage?", montageLabelText(montage.dateRangeStart, montage.dateRangeEnd), [
       { text: "Cancel", style: "cancel" },
       {
         text: "Delete",

@@ -89,6 +89,10 @@ export default function CalendarScreen() {
 
   const listRef = useRef<FlatList<MonthData>>(null);
   const containerHeightRef = useRef(0);
+  const aliveRef = useRef(true);
+  useEffect(() => () => {
+    aliveRef.current = false;
+  }, []);
   // Updated on every scroll (no re-render needed — only read when Play is tapped).
   const visibleMonthIndexRef = useRef(PAST_MONTHS);
   const [slideshowMedia, setSlideshowMedia] = useState<SlideshowMedia[] | null>(null);
@@ -128,7 +132,9 @@ export default function CalendarScreen() {
   useFocusEffect(
     useCallback(() => {
       scrollToToday();
-      MediaRepository.getFirstMediaByDateRange(startDate, endDate).then(setThumbnails);
+      MediaRepository.getFirstMediaByDateRange(startDate, endDate).then((result) => {
+        if (aliveRef.current) setThumbnails(result);
+      });
     }, [scrollToToday, startDate, endDate]),
   );
 

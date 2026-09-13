@@ -1,10 +1,11 @@
 import { memo, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
-import { colors, fontSize, radius, spacing } from "@/theme";
+import { colors, radius, spacing } from "@/theme";
 import type { Montage } from "@/db/schema";
 import { formatDuration } from "@/utils/time";
 import { MediaThumbnail, getVideoPoster } from "@/components/media/MediaThumbnail";
+import { montageLabel } from "@/components/montage/montageLabel";
 
 type Props = {
   montage: Montage;
@@ -12,11 +13,6 @@ type Props = {
   onPress: (montage: Montage) => void;
   onLongPress?: (montage: Montage) => void;
 };
-
-function formatDateRange(start: string, end: string): string {
-  if (start === end) return start.slice(5);
-  return `${start.slice(5)} – ${end.slice(5)}`;
-}
 
 export const MontageCard = memo(function MontageCard({ montage, width, onPress, onLongPress }: Props) {
   const [posterReady, setPosterReady] = useState(false);
@@ -31,6 +27,7 @@ export const MontageCard = memo(function MontageCard({ montage, width, onPress, 
     };
   }, [montage.outputUri]);
 
+  const label = montageLabel(montage.dateRangeStart, montage.dateRangeEnd);
   const height = Math.round((width * 4) / 3);
   // Belt-and-suspenders numeric sizing — width/height/minWidth/minHeight/flexBasis all pinned to the
   // same explicit values, so nothing (flex shrink, content-based auto-sizing, a missing flex-basis) can collapse it.
@@ -58,11 +55,11 @@ export const MontageCard = memo(function MontageCard({ montage, width, onPress, 
 
         <View style={s.infoBar}>
           <Text style={s.titleText} numberOfLines={1}>
-            {montage.title ?? formatDateRange(montage.dateRangeStart, montage.dateRangeEnd)}
+            {label.primary}
           </Text>
-          {montage.title && (
+          {label.secondary && (
             <Text style={s.subtitleText} numberOfLines={1}>
-              {formatDateRange(montage.dateRangeStart, montage.dateRangeEnd)}
+              {label.secondary}
             </Text>
           )}
         </View>
@@ -119,6 +116,7 @@ const s = StyleSheet.create({
     paddingVertical: spacing[2],
     gap: 1,
   },
-  titleText: { fontSize: fontSize.xs, fontWeight: "700", color: "#fff" },
-  subtitleText: { fontSize: 10, fontWeight: "500", color: "rgba(255,255,255,0.8)" },
+  // Caveat ships in a single weight — setting fontWeight here would drop Android back to the system font.
+  titleText: { fontFamily: "Caveat", fontSize: 19, lineHeight: 21, color: "#fff" },
+  subtitleText: { fontFamily: "Caveat", fontSize: 15, lineHeight: 16, color: "rgba(255,255,255,0.85)" },
 });
