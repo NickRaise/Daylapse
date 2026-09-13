@@ -1,17 +1,13 @@
 import { colors, spacing } from "@/theme";
 import { StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo } from "react";
-import * as ImagePicker from "expo-image-picker";
 import { parseDateKey } from "@/components/calendar/utils";
 import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
 import { JournalEditor } from "@/components/journal/JournalEditor";
 import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
 import useEntryStore from "@/store/entry.store";
-import useEditorStore from "@/store/editor.store";
-import useSettingsStore from "@/store/settings.store";
-import { PHOTO_QUALITY } from "@/constants/media";
 import { AddMemoryCard } from "@/components/day/AddMemoryCard";
 import { AddMediaFab } from "@/components/day/AddMediaFab";
 import { MediaPager } from "@/components/day/MediaPager";
@@ -20,13 +16,14 @@ import { DayHeader } from "@/components/day/DayHeader";
 import { DayJournalRow } from "@/components/day/DayJournalRow";
 import { useEntryMedia } from "@/hooks/useEntryMedia";
 import { useJournalEditor } from "@/hooks/useJournalEditor";
+import { useOpenCamera } from "@/hooks/useOpenCamera";
 
 const H_PAD = 20;
 
 export default function DayScreen() {
   const { dateKey }: { dateKey: string } = useLocalSearchParams();
   const { dayName, formattedDate } = parseDateKey(dateKey as string);
-  const router = useRouter();
+  const openCamera = useOpenCamera();
 
   const currentId = useEntryStore((s) => s.currentId);
   const isLoading = useEntryStore((s) => s.isLoading);
@@ -35,10 +32,6 @@ export default function DayScreen() {
   const createEntry = useEntryStore((s) => s.createEntry);
   const updateMood = useEntryStore((s) => s.updateMood);
   const saveJournal = useEntryStore((s) => s.saveJournal);
-  const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
-  const useNativeCamera = useSettingsStore((s) => s.useNativeCamera);
-  const videoQuality = useSettingsStore((s) => s.videoQuality);
-  const recordingTimeLimit = useSettingsStore((s) => s.recordingTimeLimit);
 
   const { mediaFiles, reorderVisible, setReorderVisible, handleDeleteMedia, handleSaveOrder } =
     useEntryMedia(currentId);
@@ -54,28 +47,7 @@ export default function DayScreen() {
     createEntry(dateKey);
   }, [dateKey]);
 
-  // Skips the in-app camera screen entirely when the native-camera setting is on, going straight to the system picker instead of flashing our screen first.
-  const handleOpenCamera = async () => {
-    if (useNativeCamera) {
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images", "videos"],
-        quality: PHOTO_QUALITY[videoQuality],
-        videoMaxDuration: recordingTimeLimit ?? 300,
-      });
-      if (result.canceled) return;
-      const asset = result.assets[0];
-      if (!asset) return;
-      setPendingMedia({
-        uri: asset.uri,
-        type: asset.type === "video" ? "video" : "photo",
-        width: asset.width,
-        height: asset.height,
-      });
-      router.push("/editor");
-      return;
-    }
-    router.push({ pathname: "/camera", params: { dateKey } });
-  };
+  const handleOpenCamera = () => openCamera(dateKey);
 
   return (
     <View style={styles.root}>
