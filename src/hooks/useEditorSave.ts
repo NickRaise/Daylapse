@@ -5,11 +5,12 @@ import * as MediaLibrary from "expo-media-library/legacy";
 import { captureRef } from "react-native-view-shot";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
-import { burnOverlayOntoVideo } from "@/service/videoBurn";
+import { exportVideo } from "@/service/videoBurn";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
 import useSettingsStore from "@/store/settings.store";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
+import { isExportFrameNoop, type ExportFrame } from "@/utils/frameMapping";
 import type { CaptionStyle } from "@/types";
 import type { TrimRange } from "@/components/editor/TrimPanel";
 
@@ -19,6 +20,7 @@ type Options = {
   isVideo: boolean;
   hasOverlay: boolean;
   videoSize: { width: number; height: number } | null;
+  exportFrame: ExportFrame | null;
   captionStyle: CaptionStyle;
   volume: number;
   dateStampEnabled: boolean;
@@ -39,6 +41,7 @@ export function useEditorSave({
   isVideo,
   hasOverlay,
   videoSize,
+  exportFrame,
   captionStyle,
   volume,
   dateStampEnabled,
@@ -77,21 +80,25 @@ export function useEditorSave({
     }
   }
 
-  // Burns the currently-rendered caption/date-stamp overlay onto the video at its native resolution.
-  async function burnIfNeeded(uri: string): Promise<string> {
-    if (!hasOverlay || !videoSize) return uri;
+  // Re-frames the video to the editor frame and burns in the caption/date stamp, so the file matches the preview.
+  async function reframeAndBurn(uri: string): Promise<string> {
+    if (!videoSize || !exportFrame) return uri;
+    const needsReframe = !isExportFrameNoop(exportFrame, videoSize.width, videoSize.height);
+    if (!hasOverlay && !needsReframe) return uri;
     try {
-      const overlayPng = await captureRef(burnOverlayRef, {
-        format: "png",
-        result: "tmpfile",
-        width: videoSize.width,
-        height: videoSize.height,
-      });
+      const overlayPng = hasOverlay
+        ? await captureRef(burnOverlayRef, {
+            format: "png",
+            result: "tmpfile",
+            width: exportFrame.width,
+            height: exportFrame.height,
+          })
+        : null;
       const outPath = `${toFsPath(Paths.cache.uri)}/burned-${Date.now()}.mp4`;
-      await burnOverlayOntoVideo(uri, overlayPng, outPath);
+      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath);
       return toFileUri(outPath);
     } catch (error) {
-      console.error("[editor] video burn failed, saving without overlay:", error);
+      console.error("[editor] video export failed, saving unframed:", error);
       return uri;
     }
   }
@@ -105,8 +112,8 @@ export function useEditorSave({
 
       if (isVideo) {
         const trimmedUri = await trimIfNeeded(pendingMedia.uri);
-        const burnedUri = await burnIfNeeded(trimmedUri);
-        localUri = await mediaService.copyMedia(burnedUri);
+        const framedUri = await reframeAndBurn(trimmedUri);
+        localUri = await mediaService.copyMedia(framedUri);
         if (keepOriginalMedia) {
           rawUri = await mediaService.copyMedia(pendingMedia.uri);
         }

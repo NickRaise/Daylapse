@@ -32,7 +32,7 @@ import { useEditorFit } from "@/hooks/useEditorFit";
 import { useCaptionEditor } from "@/hooks/useCaptionEditor";
 import { useEditorSave } from "@/hooks/useEditorSave";
 import { todayDateKey } from "@/utils/date";
-import { frameRectToMediaRect, frameToMediaScale, type FitMode } from "@/utils/frameMapping";
+import { mediaExportFrame, type FitMode } from "@/utils/frameMapping";
 import type { DateStampFormat } from "@/types";
 
 type Tab = "trim" | "text";
@@ -108,10 +108,13 @@ export default function EditorScreen() {
 
   const fitMode: FitMode = fit === "landscape" ? "cover" : "contain";
   const hasOverlay = captionText.length > 0 || dateStampEnabled;
-  const burnScale = videoSize ? frameToMediaScale(frameW, frameH, videoSize.width, videoSize.height, fitMode) : 1;
-  const mediaCaptionPos =
-    captionText && captionRect && videoSize
-      ? frameRectToMediaRect(captionRect, frameW, frameH, videoSize.width, videoSize.height, fitMode)
+  const exportFrame = videoSize
+    ? mediaExportFrame(frameW, frameH, videoSize.width, videoSize.height, fitMode)
+    : null;
+  // The exported frame is just the on-screen frame scaled up, so caption coordinates only need that factor.
+  const overlayCaptionPos =
+    captionText && captionRect && exportFrame
+      ? { left: captionRect.left / exportFrame.scale, top: captionRect.top / exportFrame.scale }
       : null;
 
   const { handleSave, isSaving } = useEditorSave({
@@ -120,6 +123,7 @@ export default function EditorScreen() {
     isVideo,
     hasOverlay,
     videoSize,
+    exportFrame,
     captionStyle,
     volume,
     dateStampEnabled,
@@ -261,15 +265,15 @@ export default function EditorScreen() {
           isSaving={isSaving}
         />
 
-        {isVideo && hasOverlay && videoSize && (
+        {isVideo && hasOverlay && exportFrame && (
           <View style={s.burnOffscreen} pointerEvents="none">
             <View ref={burnOverlayRef} collapsable={false}>
               <BurnOverlay
-                width={videoSize.width}
-                height={videoSize.height}
-                scale={burnScale}
+                width={exportFrame.width}
+                height={exportFrame.height}
+                scale={exportFrame.scale}
                 captionText={captionText}
-                captionPos={mediaCaptionPos}
+                captionPos={overlayCaptionPos}
                 captionStyle={captionStyle}
                 dateStampEnabled={dateStampEnabled}
                 dateKey={dateKey}

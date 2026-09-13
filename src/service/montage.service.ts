@@ -1,4 +1,5 @@
 import { Directory, File, Paths } from "expo-file-system";
+import { loadFFmpegKit } from "@/service/ffmpeg";
 import { MediaRepository } from "@/repositories/media.repository";
 import { MontageRepository } from "@/repositories/montage.repository";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
@@ -19,7 +20,7 @@ export type CompileResult = {
 
 // Turns a still photo into a short silent clip so it can sit in the same timeline as real video clips.
 async function photoToClip(uri: string, seconds: number): Promise<string> {
-  const { FFmpegKit, ReturnCode } = require("@mtd1410/react-native-ffmpegkit") as typeof import("@mtd1410/react-native-ffmpegkit");
+  const { FFmpegKit, ReturnCode } = await loadFFmpegKit();
   const outPath = `${toFsPath(montageDir.uri)}/clip-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`;
   const command =
     // libx264 is GPL-only and absent from the "https" FFmpegKit package this app ships — h264_mediacodec is the OS's own hardware encoder, available regardless of package variant.
