@@ -4,11 +4,19 @@ import { colors } from "@/theme";
 
 type Props = {
   visible: boolean;
+  title?: string;
+  body?: string;
   onConfirm: () => void;
   onCancel: () => void;
 };
 
-export function DeleteConfirmModal({ visible, onConfirm, onCancel }: Props) {
+export function DeleteConfirmModal({
+  visible,
+  title = "Delete media?",
+  body = "This photo or video will be permanently removed from this entry.",
+  onConfirm,
+  onCancel,
+}: Props) {
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={s.backdrop} onPress={onCancel}>
@@ -16,10 +24,8 @@ export function DeleteConfirmModal({ visible, onConfirm, onCancel }: Props) {
           <View style={s.iconWrap}>
             <FontAwesomeFreeSolid name="trash" size={20} color={colors.error} />
           </View>
-          <Text style={s.title}>Delete media?</Text>
-          <Text style={s.body}>
-            This photo or video will be permanently removed from this entry.
-          </Text>
+          <Text style={s.title}>{title}</Text>
+          <Text style={s.body}>{body}</Text>
           <View style={s.btns}>
             <Pressable style={[s.btn, s.btnCancel]} onPress={onCancel}>
               <Text style={s.btnCancelText}>Cancel</Text>

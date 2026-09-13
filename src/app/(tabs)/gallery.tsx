@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Dimensions, FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { File } from "expo-file-system";
+import * as MediaLibrary from "expo-media-library/legacy";
+import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, fontSize, radius, spacing } from "@/theme";
 import { MontageRepository } from "@/repositories/montage.repository";
@@ -10,6 +12,7 @@ import { MontageCard } from "@/components/montage/MontageCard";
 import { montageLabelText } from "@/components/montage/montageLabel";
 import { CompileSheet, type CompileRange } from "@/components/montage/CompileSheet";
 import { MediaLightbox } from "@/components/day/MediaLightbox";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { compileMontage, type CompileProgress } from "@/service/montage.service";
 
 type Selected = { uri: string; type: "image" | "video" } | null;
@@ -28,6 +31,10 @@ export default function Gallery() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [selected, setSelected] = useState<Selected>(null);
   const [progress, setProgress] = useState<CompileProgress | null>(null);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true });
   const aliveRef = useRef(true);
   useEffect(() => () => {
     aliveRef.current = false;
@@ -49,18 +56,56 @@ export default function Gallery() {
 
   useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
 
-  function handleLongPress(montage: Montage) {
-    Alert.alert("Delete montage?", montageLabelText(montage.dateRangeStart, montage.dateRangeEnd), [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await MontageRepository.deleteMontage(montage.id);
-          refresh();
-        },
-      },
-    ]);
+  const selectionMode = selectedIds.length > 0;
+  const singleSelected =
+    selectedIds.length === 1 ? montages.find((m) => m.id === selectedIds[0]) : undefined;
+
+  // Stable identities keep the memoised cards from all re-rendering on every tap.
+  const toggleSelected = useCallback((montage: Montage) => {
+    setSelectedIds((ids) =>
+      ids.includes(montage.id) ? ids.filter((id) => id !== montage.id) : [...ids, montage.id],
+    );
+  }, []);
+
+  const handlePress = useCallback(
+    (montage: Montage) => {
+      if (selectionMode) return toggleSelected(montage);
+      setSelected({ uri: montage.outputUri, type: "video" });
+    },
+    [selectionMode, toggleSelected],
+  );
+
+  async function handleDeleteSelected() {
+    setConfirmDelete(false);
+    for (const id of selectedIds) await MontageRepository.deleteMontage(id);
+    setSelectedIds([]);
+    refresh();
+  }
+
+  // "Export" copies the compiled video into the device's own photo gallery — the app never had a way to get one out.
+  async function handleExportSelected() {
+    if (!mediaPermission?.granted) {
+      const result = await requestMediaPermission();
+      if (!result.granted) {
+        Alert.alert("Permission needed", "Allow media access to save montages to your gallery.");
+        return;
+      }
+    }
+    const chosen = montages.filter((m) => selectedIds.includes(m.id));
+    setExporting(true);
+    try {
+      for (const montage of chosen) await MediaLibrary.createAssetAsync(montage.outputUri);
+      setSelectedIds([]);
+      Alert.alert(
+        "Saved to gallery",
+        chosen.length === 1 ? "1 montage was saved." : `${chosen.length} montages were saved.`,
+      );
+    } catch (error) {
+      console.error("[gallery] export failed:", error);
+      Alert.alert("Export failed", "Those montages couldn't be saved to your gallery.");
+    } finally {
+      if (aliveRef.current) setExporting(false);
+    }
   }
 
   async function handleCompile(range: CompileRange) {
@@ -78,13 +123,39 @@ export default function Gallery() {
 
   return (
     <View style={s.root}>
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Montages</Text>
-        <Text style={s.headerSubtitle}>
-          {montages.length === 0
-            ? "Your compiled videos will show up here"
-            : `${montages.length} compiled video${montages.length === 1 ? "" : "s"}`}
-        </Text>
+      {/* The selection bar sits on top of the header rather than replacing it, so swapping the two can't shift the grid. */}
+      <View>
+        <View style={s.header}>
+          <Text style={s.headerTitle}>Montages</Text>
+          <Text style={s.headerSubtitle}>
+            {montages.length === 0
+              ? "Your compiled videos will show up here"
+              : `${montages.length} compiled video${montages.length === 1 ? "" : "s"}`}
+          </Text>
+        </View>
+
+        {selectionMode && (
+          <Animated.View
+            style={[StyleSheet.absoluteFill, s.selectionBar]}
+            entering={FadeIn.duration(110)}
+            exiting={FadeOut.duration(80)}
+          >
+            <Pressable onPress={() => setSelectedIds([])} hitSlop={10} style={s.selectionClose}>
+              <FontAwesomeFreeSolid name="xmark" size={16} color={colors.textPrimary} />
+            </Pressable>
+            <Text style={s.selectionCount}>{selectedIds.length} selected</Text>
+            <View style={s.selectionActions}>
+              <Pressable style={s.actionBtn} onPress={handleExportSelected} disabled={exporting}>
+                <FontAwesomeFreeSolid name="arrow-up-from-bracket" size={13} color={colors.primary} />
+                <Text style={s.actionText}>Export</Text>
+              </Pressable>
+              <Pressable style={s.actionBtn} onPress={() => setConfirmDelete(true)}>
+                <FontAwesomeFreeSolid name="trash" size={13} color={colors.error} />
+                <Text style={[s.actionText, s.actionTextDanger]}>Delete</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        )}
       </View>
 
       {montages.length === 0 ? (
@@ -101,8 +172,9 @@ export default function Gallery() {
           </Pressable>
         </View>
       ) : (
-        <FlatList
+        <Animated.FlatList
           style={s.list}
+          itemLayoutAnimation={LinearTransition.duration(160)}
           data={montages}
           keyExtractor={(m) => String(m.id)}
           numColumns={GRID_COLUMNS}
@@ -112,16 +184,22 @@ export default function Gallery() {
             <MontageCard
               montage={item}
               width={CARD_WIDTH}
-              onPress={(m) => setSelected({ uri: m.outputUri, type: "video" })}
-              onLongPress={handleLongPress}
+              selectionMode={selectionMode}
+              selected={selectedIds.includes(item.id)}
+              onPress={handlePress}
+              onLongPress={toggleSelected}
             />
           )}
         />
       )}
 
-      <Pressable style={s.fab} onPress={() => setSheetVisible(true)}>
-        <FontAwesomeFreeSolid name="plus" size={22} color={colors.textOnAccent} />
-      </Pressable>
+      {!selectionMode && (
+        <Animated.View entering={ZoomIn.duration(120)} exiting={ZoomOut.duration(90)} style={s.fab}>
+          <Pressable style={s.fabPress} onPress={() => setSheetVisible(true)}>
+            <FontAwesomeFreeSolid name="plus" size={22} color={colors.textOnAccent} />
+          </Pressable>
+        </Animated.View>
+      )}
 
       <CompileSheet
         visible={sheetVisible}
@@ -130,6 +208,25 @@ export default function Gallery() {
       />
 
       <MediaLightbox selected={selected} onClose={() => setSelected(null)} />
+
+      <DeleteConfirmModal
+        visible={confirmDelete}
+        title={selectedIds.length === 1 ? "Delete montage?" : `Delete ${selectedIds.length} montages?`}
+        body={
+          singleSelected
+            ? `${montageLabelText(singleSelected.dateRangeStart, singleSelected.dateRangeEnd)} is removed for good. The photos and videos it was made from stay in your entries.`
+            : "These compiled videos are removed for good. The photos and videos they were made from stay in your entries."
+        }
+        onConfirm={handleDeleteSelected}
+        onCancel={() => setConfirmDelete(false)}
+      />
+
+      {exporting && (
+        <View style={s.progressOverlay}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={s.progressText}>Saving to your gallery…</Text>
+        </View>
+      )}
 
       {progress && (
         <View style={s.progressOverlay}>
@@ -163,6 +260,45 @@ const s = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textMuted,
   },
+  selectionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing[3],
+    paddingHorizontal: spacing[5],
+    paddingTop: 56,
+    paddingBottom: spacing[3],
+    backgroundColor: colors.bg,
+  },
+  selectionClose: {
+    width: 28,
+    height: 28,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectionCount: {
+    flex: 1,
+    fontSize: fontSize.base,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  selectionActions: { flexDirection: "row", gap: spacing[2] },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 7,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bgSurface,
+  },
+  actionText: {
+    fontSize: fontSize.xs,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  actionTextDanger: { color: colors.error },
   empty: {
     flex: 1,
     alignItems: "center",
@@ -212,6 +348,13 @@ const s = StyleSheet.create({
   row: {
     gap: spacing[3],
   },
+  fabPress: {
+    width: "100%",
+    height: "100%",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.full,
+  },
   fab: {
     position: "absolute",
     bottom: spacing[6],
@@ -220,8 +363,6 @@ const s = StyleSheet.create({
     height: 56,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
     elevation: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

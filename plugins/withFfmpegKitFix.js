@@ -3,10 +3,10 @@ const { withProjectBuildGradle } = require("@expo/config-plugins");
 // react-native-video-trim and @mtd1410/react-native-ffmpegkit each bundle their own
 // io.github.maitrungduc1410:ffmpeg-kit-<package> native dependency. Left at their
 // independent defaults they'd pull two DIFFERENT modules (video-trim defaults to
-// "min", the ffmpegkit wrapper to "https") that both define the same
-// com.arthenica.ffmpegkit.* Java classes — a Gradle duplicate-class failure.
+// "min", the ffmpegkit wrapper to "https") classes — a Gradle duplicate-class failure.
 // Pinning both to the identical package + version makes Gradle resolve one shared
-// dependency instead.
+// dependency instead. that both define the same
+// com.arthenica.ffmpegkit.* Java
 const FFMPEG_PACKAGE = "https";
 const FFMPEG_VERSION = "8.1.2";
 

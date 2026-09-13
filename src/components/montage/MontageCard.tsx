@@ -1,5 +1,6 @@
 import { memo, useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from "react-native";
+import Animated, { FadeIn, FadeOut, useAnimatedStyle, withSpring, withTiming } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { colors, radius, spacing } from "@/theme";
 import type { Montage } from "@/db/schema";
@@ -10,11 +11,20 @@ import { montageLabel } from "@/components/montage/montageLabel";
 type Props = {
   montage: Montage;
   width: number;
+  selectionMode?: boolean;
+  selected?: boolean;
   onPress: (montage: Montage) => void;
   onLongPress?: (montage: Montage) => void;
 };
 
-export const MontageCard = memo(function MontageCard({ montage, width, onPress, onLongPress }: Props) {
+export const MontageCard = memo(function MontageCard({
+  montage,
+  width,
+  selectionMode = false,
+  selected = false,
+  onPress,
+  onLongPress,
+}: Props) {
   const [posterReady, setPosterReady] = useState(false);
 
   useEffect(() => {
@@ -29,22 +39,57 @@ export const MontageCard = memo(function MontageCard({ montage, width, onPress, 
 
   const label = montageLabel(montage.dateRangeStart, montage.dateRangeEnd);
   const height = Math.round((width * 4) / 3);
+
+  // Selected tiles pull back slightly, the way a picked-up card recedes, so the choice reads without a colour change alone.
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: withSpring(selected ? 0.92 : 1, { mass: 0.5, damping: 18, stiffness: 420 }) },
+    ],
+  }));
+  const badgeStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: withSpring(selected ? 1 : 0.85, { mass: 0.4, damping: 15, stiffness: 500 }) },
+    ],
+    backgroundColor: withTiming(selected ? colors.primary : "rgba(0,0,0,0.35)", { duration: 90 }),
+    borderColor: withTiming(selected ? colors.primary : "#ffffff", { duration: 90 }),
+  }));
   // Belt-and-suspenders numeric sizing — width/height/minWidth/minHeight/flexBasis all pinned to the
   // same explicit values, so nothing (flex shrink, content-based auto-sizing, a missing flex-basis) can collapse it.
   const outerSize: ViewStyle = { width, height, minWidth: width, minHeight: height, flexBasis: width };
 
   return (
-    <View style={[s.outer, outerSize]}>
+    <Animated.View style={[s.outer, outerSize, cardStyle]}>
       <Pressable
-        style={({ pressed }) => [StyleSheet.absoluteFill, s.clip, pressed && s.cardPressed]}
+        style={({ pressed }) => [
+          StyleSheet.absoluteFill,
+          s.clip,
+          selected && s.clipSelected,
+          pressed && s.cardPressed,
+        ]}
         onPress={() => onPress(montage)}
         onLongPress={onLongPress ? () => onLongPress(montage) : undefined}
+        // The default 500ms hold makes entering selection mode feel unresponsive.
+        delayLongPress={200}
       >
         <MediaThumbnail uri={montage.outputUri} type="video" />
-        {posterReady && (
-          <View style={s.playBadge}>
+        {posterReady && !selectionMode && (
+          <Animated.View style={s.playBadge} entering={FadeIn.duration(100)} exiting={FadeOut.duration(70)}>
             <FontAwesomeFreeSolid name="circle-play" size={30} color="#fff" />
-          </View>
+          </Animated.View>
+        )}
+
+        {selectionMode && (
+          <Animated.View
+            style={[s.selectBadge, badgeStyle]}
+            entering={FadeIn.duration(100)}
+            exiting={FadeOut.duration(70)}
+          >
+            {selected && (
+              <Animated.View entering={FadeIn.duration(70)}>
+                <FontAwesomeFreeSolid name="check" size={10} color={colors.textOnAccent} />
+              </Animated.View>
+            )}
+          </Animated.View>
         )}
 
         {montage.duration != null && (
@@ -64,7 +109,7 @@ export const MontageCard = memo(function MontageCard({ montage, width, onPress, 
           )}
         </View>
       </Pressable>
-    </View>
+    </Animated.View>
   );
 });
 
@@ -87,7 +132,19 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  clipSelected: { borderWidth: 2, borderColor: colors.primary },
   cardPressed: { opacity: 0.85 },
+  selectBadge: {
+    position: "absolute",
+    top: spacing[2],
+    left: spacing[2],
+    width: 20,
+    height: 20,
+    borderRadius: radius.full,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   playBadge: {
     position: "absolute",
     top: "50%",

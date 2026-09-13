@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useRouter } from "expo-router";
 import FontAwesomeFreeSolid, {
@@ -11,6 +11,7 @@ import useEntryStore from "@/store/entry.store";
 import { parseDateKey } from "@/components/calendar/utils";
 import { MontageCard } from "@/components/montage/MontageCard";
 import { MediaThumbnail } from "@/components/media/MediaThumbnail";
+import { MediaLightbox } from "@/components/day/MediaLightbox";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -42,6 +43,7 @@ export default function Home() {
   const router = useRouter();
   const openCamera = useOpenCamera();
   const data = useHomeData();
+  const [playingMontage, setPlayingMontage] = useState<string | null>(null);
 
   async function handleQuickCapture() {
     await useEntryStore.getState().createEntry(data.todayKey);
@@ -158,19 +160,14 @@ export default function Home() {
 
       {data.montages.length > 0 && (
         <View style={s.section}>
-          <View style={s.sectionHeaderRow}>
-            <Text style={s.sectionTitle}>Your montages</Text>
-            <Pressable onPress={() => router.push("/gallery")}>
-              <Text style={s.sectionLink}>See all</Text>
-            </Pressable>
-          </View>
+          <Text style={s.sectionTitle}>Your montages</Text>
           <View style={s.montageRow}>
             {data.montages.map((m) => (
               <MontageCard
                 key={m.id}
                 montage={m}
                 width={108}
-                onPress={() => router.push("/gallery")}
+                onPress={(montage) => setPlayingMontage(montage.outputUri)}
               />
             ))}
           </View>
@@ -178,6 +175,11 @@ export default function Home() {
       )}
 
       {data.loading && <ActivityIndicator style={s.loading} color={colors.primary} />}
+
+      <MediaLightbox
+        selected={playingMontage ? { uri: playingMontage, type: "video" } : null}
+        onClose={() => setPlayingMontage(null)}
+      />
     </ScrollView>
   );
 }
@@ -270,11 +272,6 @@ const s = StyleSheet.create({
   },
 
   section: { gap: spacing[3] },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
   sectionTitle: {
     fontSize: fontSize.xs,
     fontWeight: "700",
@@ -282,12 +279,6 @@ const s = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
-  sectionLink: {
-    fontSize: fontSize.xs,
-    fontWeight: "700",
-    color: colors.primary,
-  },
-
   latestCard: {
     flexDirection: "row",
     backgroundColor: colors.bgSurface,

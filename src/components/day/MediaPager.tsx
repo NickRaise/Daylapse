@@ -6,7 +6,7 @@ import { AddMemoryCard } from "./AddMemoryCard";
 import { ImageCard } from "./media-card/ImageCard";
 import { VideoCard } from "./media-card/VideoCard";
 import { MediaLightbox } from "./MediaLightbox";
-import { DeleteConfirmModal } from "./DeleteConfirmModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 
 const MEDIA_HEIGHT = 300;
 const H_PAD = 20;
