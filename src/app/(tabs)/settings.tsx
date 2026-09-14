@@ -1,8 +1,10 @@
 import { useState } from "react";
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
 import { DEFAULT_THEME, makeStyles, spacing, THEME_ORDER, useColors, type ThemeName } from "@/theme";
 import { themes } from "@/themes";
 import useSettingsStore, { FrameFillColor, VideoQuality } from "@/store/settings.store";
+import { requestReminderPermission, syncReminder } from "@/service/reminder.service";
 import type { AspectRatio } from "@/types";
 
 const QUALITY_OPTIONS: { label: string; value: VideoQuality }[] = [
@@ -22,6 +24,12 @@ const FILL_COLOR_OPTIONS: { label: string; value: FrameFillColor }[] = [
   { label: "Black", value: "black" },
   { label: "Theme", value: "theme" },
 ];
+
+function formatTime12h(hour: number, minute: number): string {
+  const period = hour >= 12 ? "PM" : "AM";
+  const h12 = hour % 12 === 0 ? 12 : hour % 12;
+  return `${h12}:${String(minute).padStart(2, "0")} ${period}`;
+}
 
 const TIME_LIMIT_OPTIONS: { label: string; value: number | null }[] = [
   { label: "None", value: null },
@@ -62,6 +70,45 @@ export default function Settings() {
   const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
   const frameFillColor = useSettingsStore((s) => s.frameFillColor);
   const setFrameFillColor = useSettingsStore((s) => s.setFrameFillColor);
+  const reminderEnabled = useSettingsStore((s) => s.reminderEnabled);
+  const setReminderEnabled = useSettingsStore((s) => s.setReminderEnabled);
+  const reminderHour = useSettingsStore((s) => s.reminderHour);
+  const reminderMinute = useSettingsStore((s) => s.reminderMinute);
+  const setReminderTime = useSettingsStore((s) => s.setReminderTime);
+  const [showIosTimePicker, setShowIosTimePicker] = useState(false);
+
+  async function handleReminderToggle(value: boolean) {
+    if (value) {
+      const granted = await requestReminderPermission();
+      if (!granted) {
+        Alert.alert("Permission needed", "Allow notifications so Daylapse can remind you to keep today.");
+        return;
+      }
+    }
+    await setReminderEnabled(value);
+    syncReminder();
+  }
+
+  function applyReminderTime(date: Date) {
+    setReminderTime(date.getHours(), date.getMinutes()).then(() => syncReminder());
+  }
+
+  function openTimePicker() {
+    const value = new Date();
+    value.setHours(reminderHour, reminderMinute, 0, 0);
+    if (Platform.OS === "android") {
+      DateTimePickerAndroid.open({
+        value,
+        mode: "time",
+        display: "clock",
+        onChange: (event, selected) => {
+          if (event.type === "set" && selected) applyReminderTime(selected);
+        },
+      });
+    } else {
+      setShowIosTimePicker(true);
+    }
+  }
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -230,6 +277,59 @@ export default function Settings() {
             ))}
           </View>
         </View>
+      </View>
+
+      <Text style={s.sectionLabel}>Remembering</Text>
+      <View style={s.section}>
+        <View style={s.row}>
+          <View style={s.rowText}>
+            <Text style={s.rowTitle}>Nudge me to keep today</Text>
+            <Text style={s.rowDesc}>
+              A quiet word, once a day, if today is still waiting to be kept.
+            </Text>
+          </View>
+          <Switch
+            value={reminderEnabled}
+            onValueChange={handleReminderToggle}
+            trackColor={{ false: colors.border, true: colors.primary }}
+            thumbColor={colors.bgSurface}
+          />
+        </View>
+
+        {reminderEnabled && (
+          <>
+            <View style={s.divider} />
+            <View style={s.settingBlock}>
+              <Text style={s.rowTitle}>When to remind me</Text>
+              <Pressable style={s.timeRow} onPress={openTimePicker}>
+                <Text style={s.timeText}>{formatTime12h(reminderHour, reminderMinute)}</Text>
+                <Text style={s.timeChevron}>Change</Text>
+              </Pressable>
+              {showIosTimePicker && (
+                <View style={s.iosPickerWrap}>
+                  <DateTimePicker
+                    mode="time"
+                    display="spinner"
+                    value={(() => {
+                      const d = new Date();
+                      d.setHours(reminderHour, reminderMinute, 0, 0);
+                      return d;
+                    })()}
+                    onChange={(_event, selected) => {
+                      if (selected) applyReminderTime(selected);
+                    }}
+                  />
+                  <Pressable style={s.iosPickerDone} onPress={() => setShowIosTimePicker(false)}>
+                    <Text style={s.iosPickerDoneText}>Done</Text>
+                  </Pressable>
+                </View>
+              )}
+              <Text style={s.note}>
+                Kept quiet the moment today is — no need to nag a day already done.
+              </Text>
+            </View>
+          </>
+        )}
       </View>
 
       <Text style={s.sectionLabel}>Keeping</Text>
@@ -436,5 +536,41 @@ const useStyles = makeStyles((colors) => ({
     fontStyle: "italic",
     color: colors.textMuted,
     lineHeight: 17,
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 4,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.bg,
+  },
+  timeText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: colors.textPrimary,
+  },
+  timeChevron: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  iosPickerWrap: {
+    alignItems: "center",
+    marginTop: 4,
+  },
+  iosPickerDone: {
+    alignSelf: "stretch",
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  iosPickerDoneText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: colors.primary,
   },
 }));

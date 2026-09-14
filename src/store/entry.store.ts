@@ -2,6 +2,8 @@ import { Mood } from "@/types";
 import { Entry } from "@/db/schema";
 import { EntryRepository } from "@/repositories/entry.repository";
 import { create } from "zustand";
+import { todayDateKey } from "@/utils/date";
+import { syncReminder } from "@/service/reminder.service";
 
 interface EntryState {
   currentId: number | null;
@@ -66,6 +68,8 @@ const useEntryStore = create<EntryState>((set, get) => ({
           currentMood: (entry!.mood as Mood) ?? null,
           entriesCache: { ...s.entriesCache, [dateKey]: entry! },
         }));
+        // Today now has an entry row, so the "come back and add today" reminder no longer applies.
+        if (dateKey === todayDateKey()) syncReminder();
       }
     } finally {
       set({ isLoading: false });

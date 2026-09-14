@@ -5,9 +5,11 @@ import { Caveat_400Regular, useFonts } from "@expo-google-fonts/caveat";
 import { migrateDb } from "@/db";
 import useSettingsStore from "@/store/settings.store";
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider, useTheme } from "@/theme";
+import { configureNotificationHandler, syncReminder } from "@/service/reminder.service";
 
 const STACK_SCREEN_OPTIONS = { headerShown: false } as const;
 const FONTS = { Caveat: Caveat_400Regular } as const;
@@ -20,11 +22,20 @@ export default function RootLayout() {
 
   useEffect(() => {
     const init = async () => {
+      configureNotificationHandler();
       await Promise.all([migrateDb(), useSettingsStore.getState().hydrate()]);
       setReady(true);
+      syncReminder();
     };
 
     init();
+
+    // The reminder's copy depends on today's state, so it's recomputed on every app-state change
+    // rather than trusting a single far-future trigger to still be relevant when it fires.
+    const sub = AppState.addEventListener("change", (state) => {
+      if (state === "active" || state === "background") syncReminder();
+    });
+    return () => sub.remove();
   }, []);
 
   if (!ready || !fontsLoaded) {

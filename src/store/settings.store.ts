@@ -21,6 +21,10 @@ type Settings = {
   frameFillColor: FrameFillColor;
   // Storage
   keepOriginalMedia: boolean;
+  // Daily reminder
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
   // Editor prefs — auto-saved on every save, not exposed in settings UI
   lastDateStampEnabled: boolean;
   lastCaptionStyle: CaptionStyle;
@@ -38,6 +42,8 @@ type SettingsState = Settings & {
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
   setFrameFillColor: (value: FrameFillColor) => Promise<void>;
   setKeepOriginalMedia: (value: boolean) => Promise<void>;
+  setReminderEnabled: (value: boolean) => Promise<void>;
+  setReminderTime: (hour: number, minute: number) => Promise<void>;
   setTheme: (value: ThemeName) => Promise<void>;
   setLastEditorPrefs: (prefs: {
     captionStyle: CaptionStyle;
@@ -56,6 +62,9 @@ const DEFAULTS: Settings = {
   defaultAspectRatio: "4:3",
   frameFillColor: "black",
   keepOriginalMedia: false,
+  reminderEnabled: false,
+  reminderHour: 20,
+  reminderMinute: 0,
   lastDateStampEnabled: false,
   lastCaptionStyle: {
     textColor: "#FFFFFF",
@@ -95,6 +104,9 @@ function pickSettings(state: SettingsState): Settings {
     defaultAspectRatio: state.defaultAspectRatio,
     frameFillColor: state.frameFillColor,
     keepOriginalMedia: state.keepOriginalMedia,
+    reminderEnabled: state.reminderEnabled,
+    reminderHour: state.reminderHour,
+    reminderMinute: state.reminderMinute,
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastCaptionStyle: state.lastCaptionStyle,
     lastVolume: state.lastVolume,
@@ -125,6 +137,8 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
     setFrameFillColor: async (value) => persist({ frameFillColor: value }),
     setKeepOriginalMedia: async (value) => persist({ keepOriginalMedia: value }),
+    setReminderEnabled: async (value) => persist({ reminderEnabled: value }),
+    setReminderTime: async (hour, minute) => persist({ reminderHour: hour, reminderMinute: minute }),
 
     setTheme: async (value) => persist({ theme: value }),
 

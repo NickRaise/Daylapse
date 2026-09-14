@@ -5,6 +5,7 @@ import { MediaRepository, type MediaThumbnailRef } from "@/repositories/media.re
 import { MontageRepository } from "@/repositories/montage.repository";
 import { todayDateKey } from "@/utils/date";
 import { formatDateKey } from "@/components/calendar/utils";
+import { computeStreakStats } from "@/utils/streak";
 import type { Entry, Montage } from "@/db/schema";
 
 const HISTORY_DAYS = 730; // ~2 years — wide enough for a meaningful streak/entry count
@@ -59,26 +60,7 @@ export function useHomeData(): HomeData {
     ]);
 
     const rows = entries ?? [];
-    const byDate = new Set(rows.map((e) => e.date));
-
-    // A day only counts toward the streak if it was actually logged the day it happened —
-    // backfilling ten old days in one sitting shouldn't read as ten days of regular use.
-    const loggedOnTime = new Set(
-      rows
-        .filter((e) => formatDateKey(e.createdAt.getFullYear(), e.createdAt.getMonth(), e.createdAt.getDate()) === e.date)
-        .map((e) => e.date),
-    );
-
-    // Streak counts consecutive days ending today, or yesterday if today isn't logged yet (so it doesn't reset before the day is even over).
-    let streak = 0;
-    const cursor = new Date();
-    if (!loggedOnTime.has(todayKey)) cursor.setDate(cursor.getDate() - 1);
-    while (true) {
-      const key = formatDateKey(cursor.getFullYear(), cursor.getMonth(), cursor.getDate());
-      if (!loggedOnTime.has(key)) break;
-      streak++;
-      cursor.setDate(cursor.getDate() - 1);
-    }
+    const { streak, hasTodayEntry } = computeStreakStats(rows, todayKey);
 
     // Query has no guaranteed order, so pick the max by date string (YYYY-MM-DD sorts correctly) rather than trusting row order.
     const withJournal = rows.filter((e) => !!e.journal?.trim());
@@ -96,7 +78,7 @@ export function useHomeData(): HomeData {
     setData({
       loading: false,
       todayKey,
-      hasTodayEntry: byDate.has(todayKey),
+      hasTodayEntry,
       streak,
       totalEntries: rows.length,
       latestEntry,
