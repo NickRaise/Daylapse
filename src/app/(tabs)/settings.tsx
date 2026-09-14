@@ -174,7 +174,12 @@ export default function Settings() {
       <Text style={s.sectionLabel}>Composing</Text>
       <View style={s.section}>
         <View style={s.settingBlock}>
-          <Text style={s.rowTitle}>Shape of the frame</Text>
+          <View style={s.titleRow}>
+            <Text style={s.rowTitle}>Shape of the frame</Text>
+            <View style={s.badge}>
+              <Text style={s.badgeText}>Experimental</Text>
+            </View>
+          </View>
           <Text style={s.rowDesc}>
             How the editor opens. You can still turn any single moment between tall and wide.
           </Text>

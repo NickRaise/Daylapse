@@ -10,7 +10,7 @@ import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls } from "../../components/camera/CameraControls";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
-import { PHOTO_QUALITY } from "@/constants/media";
+import { PHOTO_QUALITY, VIDEO_RECORD_QUALITY } from "@/constants/media";
 import { useMediaPermissions } from "@/hooks/useMediaPermissions";
 import { useRecordingTimer } from "@/hooks/useRecordingTimer";
 import { useCameraReady } from "@/hooks/useCameraReady";
@@ -189,6 +189,7 @@ export default function Camera() {
         facing={facing}
         mode={cameraMode}
         isRecording={isRecording}
+        videoQuality={VIDEO_RECORD_QUALITY[videoQuality]}
         onCameraReady={handleCameraReady}
         onClose={() => router.back()}
         onOpenNativeCamera={handleNativeCamera}

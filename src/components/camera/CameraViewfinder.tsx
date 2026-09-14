@@ -1,4 +1,4 @@
-import { CameraView, CameraType, CameraMode } from "expo-camera";
+import { CameraView, CameraType, CameraMode, VideoQuality } from "expo-camera";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { RefObject } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -9,6 +9,7 @@ type Props = {
   facing: CameraType;
   mode: CameraMode;
   isRecording: boolean;
+  videoQuality: VideoQuality;
   onCameraReady: () => void;
   onClose: () => void;
   onOpenNativeCamera: () => void;
@@ -19,6 +20,7 @@ export function CameraViewfinder({
   facing,
   mode,
   isRecording,
+  videoQuality,
   onCameraReady,
   onClose,
   onOpenNativeCamera,
@@ -35,7 +37,7 @@ export function CameraViewfinder({
         mode={mode}
         onCameraReady={onCameraReady}
         mute={false}
-        videoQuality="720p"
+        videoQuality={videoQuality}
       />
 
       {isRecording ? (
