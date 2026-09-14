@@ -212,9 +212,9 @@ export default function Settings() {
         <View style={s.divider} />
 
         <View style={s.settingBlock}>
-          <Text style={s.rowTitle}>Colour of the stripes</Text>
+          <Text style={s.rowTitle}>Colour beyond the frame</Text>
           <Text style={s.rowDesc}>
-            When a moment doesn't quite fill the frame's shape, this fills the space around it.
+            Not every moment matches your frame's shape — choose what fills the space left over.
           </Text>
           <View style={s.pills}>
             {FILL_COLOR_OPTIONS.map(({ label, value }) => (
