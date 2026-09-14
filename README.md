@@ -1,13 +1,19 @@
 # Daylapse
 
-A personal daily journaling app for capturing one moment per day — a photo or short video clip, a mood, and a few lines of text — then revisiting them on a scrollable calendar.
+A personal daily journaling app for capturing one moment per day — a photo or short video clip, a mood, and a few lines of text — then revisiting them on a scrollable calendar, playing them back as a slideshow, or weaving a run of days into a single montage video.
 
 ---
 
 ## Features
 
+### Home
+A greeting, a streak counter, and quick actions (Capture, Calendar, Montages, Journal). The streak only counts days that were actually logged on the day they happened — backfilling old entries in one sitting doesn't inflate it. Shows the latest entry, a horizontal strip of recent days, and your most recent montages.
+
 ### Calendar
-The home screen is a scrollable calendar spanning ~5 years back and 3 months ahead. Past days that have entries show a thumbnail of the first saved media item. Tapping any past or present day opens that day's entry.
+A scrollable calendar spanning ~5 years back and 3 months ahead. Past days that have entries show a thumbnail of the first saved media item. Tapping any past or present day opens that day's entry. A floating action button opens a **Play** slideshow of the currently visible month.
+
+### Play (slideshow)
+An in-app, full-screen slideshow that plays straight through a month's daily media, one item at a time — photos held for their chosen duration, videos played through — with prev/next/close controls and no file produced.
 
 ### Day Entry
 Each day has three things to fill in:
@@ -17,32 +23,46 @@ Each day has three things to fill in:
 - **Mood** — Five moods (happy, calm, neutral, sad, angry), each a custom SVG emoji. Tapping a selected mood deselects it.
 
 ### In-App Camera
+Built on `react-native-vision-camera`.
+
 - Photo mode — tap shutter
-- Video mode — tap to start/stop recording; or long-press for hold-to-record
+- Video mode — tap to start/stop recording, or long-press for hold-to-record, at up to 60 fps (capped to the device's supported max for the chosen quality)
+- Preview locked to the same aspect ratio as the actual recording, so what you frame is what gets saved
 - Optional recording time limit (5 s, 10 s, 30 s, 1 min, 5 min, or none)
 - Fallback to native system camera via settings toggle
 - Gallery import directly from the camera screen
+- Captures in portrait open in the editor as portrait, landscape as landscape
 
 ### Media Editor
 After capturing, every photo or video passes through an editor before being saved:
 
-- **Frame** — Choose 4:3, 1:1, or 9:16 aspect ratio with portrait/landscape flip
+- **Frame** — Choose 4:3, 1:1, or 9:16 aspect ratio with portrait/landscape flip. When the media doesn't fill the frame, the leftover space is filled with a colour chosen in Settings (white, black, or the active theme's background)
 - **Caption** — Draggable text overlay; 4 text colours, 4 background tints; up to 120 characters
 - **Date stamp** — Optional date label in any corner; 3 format options (`DD MMM`, `DD MMM YYYY`, `MMM DD, YYYY`)
 - **Trim** (video only) — Scrollable thumbnail reel with a draggable clip block, animated playhead needle running fully on the UI thread via Reanimated SharedValue, step controls, and duration picker (1 s / 3 s / 5 s / 10 s / custom)
+- **Photo duration** (photo only) — How long the photo shows for in a slideshow or montage (same preset/custom picker as video trim)
 - **Volume** (video only) — Per-clip volume slider
-- **Save** — Burns caption and date stamp into the photo via react-native-view-shot. Videos are saved as-is. Optionally copies to device gallery. Editor preferences (style, volume, date stamp) are auto-persisted for the next session.
+- **Save** — Burns caption, date stamp, and frame fill colour into the output via FFmpeg. Optionally copies to device gallery. Editor preferences (style, volume, date stamp, photo duration) are auto-persisted for the next session.
+
+### Montages (Gallery tab)
+Weave a run of days into a single compiled video, saved on-device and browsable as a grid of montages:
+
+- Choose a date range — a specific month, a specific year, or a custom start/end day picked on a calendar (with year-jump and a month-grid view)
+- Each photo in the range becomes a short silent clip at its chosen duration; each video is used as recorded; everything is concatenated in date order into one output file, with progress shown while it compiles
+- Tap a montage to watch it; multi-select to export to your device gallery or delete
+- A montage whose output file has gone missing is quietly dropped from the list instead of lingering as a broken card
 
 ### Settings
 
-| Setting | Options |
-|---|---|
-| Video quality | Low / Medium / High |
-| Use native camera | toggle |
-| Recording time limit | None / 5 s / 10 s / 30 s / 1 min / 5 min |
-| Default frame ratio | 4:3 / 1:1 / 9:16 |
-| Save to gallery | toggle |
-| Keep original photo | toggle — skips burn-in so the original stays editable |
+| Section | Setting | Options |
+|---|---|---|
+| The mood | Colours of your days *(Experimental)* | sage / vanilla / blossom / cotton / dusk |
+| Capturing | How richly to capture | Low / Medium / High |
+| Capturing | Use your phone's camera | toggle |
+| Capturing | Stop recording after | None / 5 s / 10 s / 30 s / 1 min / 5 min |
+| Composing | Shape of the frame *(Experimental)* | 4:3 / 1:1 / 9:16 |
+| Composing | Colour beyond the frame | White / Black / Theme |
+| Keeping | Also keep in your gallery | toggle |
 
 ---
 
@@ -51,12 +71,13 @@ After capturing, every photo or video passes through an editor before being save
 | Layer | Library |
 |---|---|
 | Framework | Expo SDK 56 / React Native 0.85 / React 19 |
-| Navigation | Expo Router v4 (file-based, typed routes) |
+| Navigation | Expo Router v4 (file-based, typed routes, native bottom tabs) |
 | State | Zustand 5 |
 | Database | SQLite via Drizzle ORM + expo-sqlite |
 | File storage | expo-file-system (new Directory/File API) |
 | Animations | Reanimated 4 + react-native-gesture-handler |
-| Camera | expo-camera |
+| Camera | react-native-vision-camera |
+| Video/photo processing | FFmpegKit (`@mtd1410/react-native-ffmpegkit`) + react-native-video-trim, hardware `h264_mediacodec` encoding |
 | Video playback | expo-video |
 | Video thumbnails | expo-video-thumbnails |
 | Photo capture | react-native-view-shot |
@@ -75,56 +96,70 @@ src/
   app/
     _layout.tsx              # Root layout — DB migrations + settings hydration
     (tabs)/
-      index.tsx              # Home tab (placeholder)
-      calendar/index.tsx     # Scrollable calendar
-      gallery.tsx            # Gallery tab (placeholder)
+      index.tsx              # Home tab
+      calendar/index.tsx     # Scrollable calendar + Play slideshow entry
+      gallery.tsx            # Montages tab — grid, compile, export, delete
       settings.tsx           # Settings screen
     (screens)/
-      camera.tsx             # In-app camera
+      camera.tsx             # In-app camera (react-native-vision-camera)
       day.tsx                # Day entry (journal, mood, media)
-      editor.tsx             # Media editor
+      editor.tsx              # Media editor
   components/
-    calendar/                # MonthView, DayCell, FloatingAction, layout utils
-    camera/                  # CameraViewfinder, CameraControls, CameraPreview, CameraPermission
+    calendar/                # MonthView, DayCell, FloatingAction, SlideshowPlayer, layout utils
+    camera/                  # CameraViewfinder, CameraControls, CameraPermission
     day/                     # MediaPager, DayHeader, DayJournalRow, ReorderModal,
-                             # MediaLightbox, DeleteConfirmModal, media-card/
+                              # MediaLightbox, media-card/
     editor/                  # MediaFrame, DraggableCaption, DateStampOverlay,
-                             # CaptionPanel, TrimPanel, TrimControls, ClipDurationPicker,
-                             # VolumePanel, EditorHeader, EditorTabBar, EditorActions
+                              # CaptionPanel, TrimPanel, TrimControls, ClipDurationPicker,
+                              # VolumePanel, EditorHeader, EditorTabBar, EditorActions
+    montage/                 # MontageCard, CompileSheet, MiniCalendarPicker, montageLabel
     journal/                 # JournalEditor modal, MoodPicker
+    DeleteConfirmModal.tsx
+    LoadingScreen.tsx
   data/
     quotes.ts                # Rotating daily writing prompts
     emoji.tsx / emojis/      # SVG-backed mood emoji components
   db/
-    schema.ts                # Drizzle table definitions
+    schema.ts                # Drizzle table definitions (entries, media, montages)
     index.ts                 # openDatabaseSync + migrateDb()
+    migration.ts / relation.ts
     migrations/              # Auto-generated SQL files
   hooks/
-    useClipBlock.ts          # Video clip drag/tap/step gestures + Reanimated styles
-    useEditorSave.ts         # Photo burn-in / video copy / DB write / pref persist
-    useEditorVideo.ts        # expo-video player + 50 ms playhead SharedValue
-    useThumbnails.ts         # 10-frame async thumbnail generation
-    useCameraReady.ts        # Promise-gate for CameraView readiness
+    useClipTrim.ts           # Video clip drag/tap/step gestures + Reanimated styles
+    useEditorSave.ts         # Photo burn-in / video export / DB write / pref persist
+    useEditorVideo.ts        # expo-video player + playhead SharedValue
+    useEditorFit.ts          # Frame-fit math for the editor
+    useCaptionEditor.ts
+    useThumbnails.ts         # Async thumbnail generation
     useEntryMedia.ts         # Load, delete, reorder media for open day
     useJournalEditor.ts      # Open/close state + debounced journal save
-    useMediaPermissions.ts   # Camera + library permission flow
+    useMediaPermissions.ts   # Camera + microphone + library permission flow (vision-camera)
     useRecordingTimer.ts     # Elapsed seconds counter during recording
+    useHomeData.ts           # Home screen stats — streak, entries, recent media, montages
+    useOpenCamera.ts
   repositories/
     entry.repository.ts      # CRUD for entries table
-    media.repository.ts      # CRUD for media table
+    media.repository.ts      # CRUD for media table + date-range queries for Play/Compile
+    montage.repository.ts    # CRUD for montages table
+    util.ts
   service/
     media.service.ts         # Copy/delete files in {DocumentDirectory}/media/
+    montage.service.ts       # Compile pipeline — photo-to-clip conversion + merge
+    videoBurn.ts             # FFmpeg caption/date-stamp/frame burn-in export
+    ffmpeg.ts                # FFmpegKit loader
   store/
     editor.store.ts          # pendingMedia — bridge from camera to editor
     entry.store.ts           # currentEntry + entriesCache (batch-loaded for calendar)
-    media.store.ts           # recentlySavedMediaURI — signals day screen to refresh
     settings.store.ts        # All settings, persisted to app-settings.json
   themes/                    # 5 named themes: sage, vanilla, blossom, cotton, dusk
-  theme.ts                   # Active theme export (currently: sage)
-  types/index.ts             # Mood, CaptionStyle, DateStampStyle, AspectRatio, etc.
+  theme.tsx                  # Theme context, active theme, style helpers
+  types/index.ts              # Mood, CaptionStyle, DateStampStyle, AspectRatio, etc.
   utils/
     date.ts                  # todayDateKey()
     time.ts                  # fmt(seconds) → "M:SS.s"
+    frameMapping.ts          # Export-frame math (fit/scale/crop for the chosen aspect ratio)
+    fileUri.ts                # file:// <-> filesystem path helpers
+  constants/media.ts          # Photo quality + video resolution/fps presets
 ```
 
 ---
@@ -150,9 +185,21 @@ src/
 | `entry_id` | INTEGER | FK → entries.id |
 | `type` | TEXT | `image \| video` |
 | `uri` | TEXT | Path in app-managed storage |
+| `raw_uri` | TEXT | nullable, reserved for a future "keep the untouched original" option (not currently exposed in Settings) |
 | `caption` | TEXT | nullable |
-| `duration` | INTEGER | nullable, seconds |
+| `duration` | INTEGER | nullable — seconds for video (auto-detected) or photo (user-picked display duration) |
 | `order` | INTEGER | display order within the entry |
+| `createdAt` | INTEGER | Unix timestamp |
+
+**montages** — one row per compiled montage video
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | INTEGER PK | autoincrement |
+| `title` | TEXT | nullable |
+| `date_range_start` / `date_range_end` | TEXT | `YYYY-MM-DD` |
+| `output_uri` | TEXT | Path to the compiled video |
+| `duration` | INTEGER | nullable, total seconds of the compiled output |
 | `createdAt` | INTEGER | Unix timestamp |
 
 ---
@@ -166,6 +213,7 @@ All data is private to the app — no cloud sync, no remote backend.
   daylapse.db          # SQLite database
   app-settings.json    # Persisted settings (JSON)
   media/               # All photo and video files (timestamped filenames)
+  montages/            # Compiled montage videos + intermediate clips
 ```
 
 ---
@@ -174,13 +222,13 @@ All data is private to the app — no cloud sync, no remote backend.
 
 The entry store pre-loads all entries in the visible calendar range with one batched DB query on calendar mount. Opening any previously visited day is instant — no loading state. Mood and journal updates are optimistic: the UI updates immediately and the DB write happens in the background.
 
-The editor prefs (caption style, date stamp style, volume, date stamp toggle) are persisted automatically on every successful save so the next editor session restores the last-used settings.
+The editor prefs (caption style, volume, date stamp toggle, photo duration) are persisted automatically on every successful save so the next editor session restores the last-used settings.
 
 ---
 
 ## Themes
 
-Five built-in colour themes. Change the active theme by updating the import in `src/theme.ts`:
+Five built-in colour themes, switchable live from Settings (marked Experimental while remaining screens are audited for full coverage):
 
 | Theme | Background | Primary accent |
 |---|---|---|
@@ -199,7 +247,7 @@ npm install
 npx expo start
 ```
 
-Scan the QR code with Expo Go to preview on device.
+Scan the QR code with Expo Go to preview on device. Note: this app uses `react-native-vision-camera` and other native modules, so a full in-app preview requires a development build (`expo run:android` / `expo run:ios`) rather than the stock Expo Go app.
 
 For a production or standalone build:
 
@@ -210,6 +258,8 @@ npx expo run:android
 # iOS
 npx expo run:ios
 ```
+
+The Android build applies a config plugin (`plugins/withFfmpegKitFix.js`) to point `react-native-video-trim`'s bundled FFmpegKit at the same package variant used elsewhere, avoiding a duplicate native library. Since `android/` is gitignored and regenerated by `expo prebuild`, re-run prebuild after any native config change.
 
 Required device permissions (prompted at runtime):
 - Camera
