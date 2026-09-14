@@ -54,7 +54,8 @@ export function useEditorSave({
   const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
   const currentEntryId = useEntryStore((s) => s.currentId);
   const saveToGallery = useSettingsStore((s) => s.saveToGallery);
-  const keepOriginalMedia = useSettingsStore((s) => s.keepOriginalMedia);
+  // Disabled — raw-media duplication is not ready to ship; always treat as off regardless of the stored setting.
+  const keepOriginalMedia = false;
   const setLastEditorPrefs = useSettingsStore((s) => s.setLastEditorPrefs);
 
   const [isSaving, setIsSaving] = useState(false);

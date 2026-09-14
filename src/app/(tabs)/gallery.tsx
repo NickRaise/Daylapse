@@ -56,7 +56,12 @@ export default function Gallery() {
     if (aliveRef.current) setMontages(valid);
   }, []);
 
-  useFocusEffect(useCallback(() => { refresh(); }, [refresh]));
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      return () => setSelectedIds([]);
+    }, [refresh]),
+  );
 
   const selectionMode = selectedIds.length > 0;
   const singleSelected =

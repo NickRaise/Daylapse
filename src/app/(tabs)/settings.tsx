@@ -54,8 +54,6 @@ export default function Settings() {
   const setRecordingTimeLimit = useSettingsStore((s) => s.setRecordingTimeLimit);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
-  const keepOriginalMedia = useSettingsStore((s) => s.keepOriginalMedia);
-  const setKeepOriginalMedia = useSettingsStore((s) => s.setKeepOriginalMedia);
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -215,29 +213,6 @@ export default function Settings() {
             thumbColor={colors.bgSurface}
           />
         </View>
-
-        <View style={s.divider} />
-
-        <View style={s.row}>
-          <View style={s.rowText}>
-            <Text style={s.rowTitle}>Keep the untouched version</Text>
-            <Text style={s.rowDesc}>
-              Your words and the date are woven into whatever you save. Keep the original alongside it
-              and you can always come back and tell it differently.
-            </Text>
-          </View>
-          <Switch
-            value={keepOriginalMedia}
-            onValueChange={setKeepOriginalMedia}
-            trackColor={{ false: colors.border, true: colors.primary }}
-            thumbColor={colors.bgSurface}
-          />
-        </View>
-        <Text style={s.note}>
-          {keepOriginalMedia
-            ? "The untouched moment is kept too — you can always rework it."
-            : "Only the moment as you made it is kept — lighter on space."}
-        </Text>
       </View>
     </ScrollView>
   );
