@@ -75,8 +75,10 @@ export const MontageCard = memo(function MontageCard({
       >
         <MediaThumbnail uri={montage.outputUri} type="video" />
         {posterReady && !selectionMode && (
-          <Animated.View style={s.playBadge} entering={FadeIn.duration(100)} exiting={FadeOut.duration(70)}>
-            <FontAwesomeFreeSolid name="circle-play" size={30} color="#fff" />
+          <Animated.View style={s.playBadgeWrap} entering={FadeIn.duration(100)} exiting={FadeOut.duration(70)}>
+            <View style={s.playBadge}>
+              <FontAwesomeFreeSolid name="circle-play" size={30} color="#fff" />
+            </View>
           </Animated.View>
         )}
 
@@ -147,12 +149,15 @@ const useStyles = makeStyles((colors) => ({
     alignItems: "center",
     justifyContent: "center",
   },
-  playBadge: {
+  // Split from playBadgeWrap so the static opacity sits on a plain View, not the Animated.View carrying the fade transition — mixing the two triggers a Reanimated warning.
+  playBadgeWrap: {
     position: "absolute",
     top: "50%",
     left: "50%",
     marginTop: -15,
     marginLeft: -15,
+  },
+  playBadge: {
     opacity: 0.9,
   },
   durationBadge: {

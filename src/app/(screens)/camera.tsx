@@ -1,4 +1,4 @@
-import { CameraView, CameraType, CameraMode } from "expo-camera";
+import { Camera as VisionCamera, useCameraDevice, useCameraFormat } from "react-native-vision-camera";
 // TODO (dev build): switch to "expo-media-library" (non-legacy) and replace createAssetAsync → Asset.create()
 import * as ImagePicker from "expo-image-picker";
 import { useCallback, useRef, useState } from "react";
@@ -7,20 +7,21 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { makeStyles, useColors } from "../../theme";
 import { CameraPermission } from "../../components/camera/CameraPermission";
 import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
-import { CameraControls } from "../../components/camera/CameraControls";
+import { CameraControls, type CameraCaptureMode } from "../../components/camera/CameraControls";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
-import { PHOTO_QUALITY, VIDEO_RECORD_QUALITY } from "@/constants/media";
+import { PHOTO_QUALITY, VIDEO_RESOLUTION, TARGET_VIDEO_FPS } from "@/constants/media";
+import { toFileUri } from "@/utils/fileUri";
 import { useMediaPermissions } from "@/hooks/useMediaPermissions";
 import { useRecordingTimer } from "@/hooks/useRecordingTimer";
-import { useCameraReady } from "@/hooks/useCameraReady";
 
 export default function Camera() {
   const s = useStyles();
-  const cameraRef = useRef<CameraView>(null);
+  const cameraRef = useRef<VisionCamera>(null);
   const router = useRouter();
   const isHoldRecordingRef = useRef(false);
   const sentToEditorRef = useRef(false); // tracks that we navigated to editor
+  const recordingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
@@ -28,16 +29,24 @@ export default function Camera() {
   const videoQuality = useSettingsStore((state) => state.videoQuality);
   const recordingTimeLimit = useSettingsStore((state) => state.recordingTimeLimit);
 
-  const [facing, setFacing] = useState<CameraType>("back");
-  const [mode, setMode] = useState<CameraMode>("picture");
-  const [cameraMode, setCameraMode] = useState<CameraMode>("picture");
+  const [facing, setFacing] = useState<"back" | "front">("back");
+  const [mode, setMode] = useState<CameraCaptureMode>("picture");
   const [isRecording, setIsRecording] = useState(false);
   const [isHoldRecording, setIsHoldRecording] = useState(false);
   const [isBusy, setIsBusy] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [cameraActive, setCameraActive] = useState(true);
 
   const { loading, granted, request } = useMediaPermissions();
   const { duration: recordingDuration, startTimer, stopTimer } = useRecordingTimer();
-  const { waitForCameraReady, handleCameraReady } = useCameraReady();
+
+  const device = useCameraDevice(facing);
+  // Both photo and video capture stay enabled at once (see CameraViewfinder), so the chosen format/fps just needs to satisfy video — no per-mode reconfiguration, which is what made hold-to-record feel sluggish before.
+  const format = useCameraFormat(device, [
+    { videoResolution: VIDEO_RESOLUTION[videoQuality] },
+    { fps: TARGET_VIDEO_FPS },
+  ]);
+  const fps = format ? Math.min(TARGET_VIDEO_FPS, format.maxFps) : 30;
 
   // When focus returns from editor and editor has cleared the pending media, dismiss camera too
   useFocusEffect(
@@ -46,6 +55,13 @@ export default function Camera() {
         router.back();
       }
     }, [pendingMedia]),
+  );
+
+  // Re-arms the camera whenever this screen regains focus — covers the "Retake" flow, where editor sends us back without clearing pendingMedia.
+  useFocusEffect(
+    useCallback(() => {
+      setCameraActive(true);
+    }, []),
   );
 
   if (loading) return <View style={s.root} />;
@@ -65,35 +81,47 @@ export default function Camera() {
   }
 
   // Shared by the tap-to-record and hold-to-record flows below.
-  async function recordVideo() {
-    if (!cameraRef.current) return;
-    try {
-      const result = await cameraRef.current.recordAsync(
-        recordingTimeLimit ? { maxDuration: recordingTimeLimit } : undefined,
-      );
-      if (result?.uri) {
-        setPendingMedia({ uri: result.uri, type: "video", isLoading: false });
-      } else {
-        setPendingMedia(null);
-        sentToEditorRef.current = false;
+  function recordVideo(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!cameraRef.current) return resolve();
+      if (recordingTimeLimit) {
+        recordingTimeoutRef.current = setTimeout(() => {
+          cameraRef.current?.stopRecording().catch(() => {});
+        }, recordingTimeLimit * 1000);
       }
-    } catch {
-      setPendingMedia(null);
-      sentToEditorRef.current = false;
-    }
+      cameraRef.current.startRecording({
+        onRecordingFinished: (video) => {
+          if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+          setCameraActive(false);
+          setPendingMedia({ uri: toFileUri(video.path), type: "video", isLoading: false });
+          resolve();
+        },
+        onRecordingError: (error) => {
+          if (recordingTimeoutRef.current) clearTimeout(recordingTimeoutRef.current);
+          setCameraActive(false);
+          console.error("[camera] recording failed:", error);
+          setPendingMedia(null);
+          sentToEditorRef.current = false;
+          resolve();
+        },
+      });
+    });
   }
 
   async function handleCapture() {
-    if (!cameraRef.current || isBusy || isHoldRecording) return;
+    if (!cameraRef.current || !cameraReady || isBusy || isHoldRecording) return;
 
     if (mode === "picture") {
       setIsBusy(true);
       try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: PHOTO_QUALITY[videoQuality],
-          shutterSound: false,
-        });
-        openEditor(photo.uri, "photo", false, { width: photo.width, height: photo.height });
+        const photo = await cameraRef.current.takePhoto({ enableShutterSound: false });
+        // Sensors are physically landscape, so photo.width/height are always landscape-shaped — swap them back when the phone was actually held in portrait.
+        const heldPortrait = photo.orientation === "portrait" || photo.orientation === "portrait-upside-down";
+        const dims = heldPortrait
+          ? { width: photo.height, height: photo.width }
+          : { width: photo.width, height: photo.height };
+        setCameraActive(false);
+        openEditor(toFileUri(photo.path), "photo", false, dims);
       } finally {
         setIsBusy(false);
       }
@@ -105,7 +133,7 @@ export default function Camera() {
       setIsRecording(false);
       stopTimer();
       openEditor("", "video", true); // loading state while video finalizes
-      cameraRef.current.stopRecording();
+      cameraRef.current.stopRecording().catch(() => {});
       return;
     }
     setIsRecording(true);
@@ -119,13 +147,11 @@ export default function Camera() {
   }
 
   async function handleLongPressCapture() {
-    if (!cameraRef.current || mode !== "picture" || isHoldRecording) return;
+    if (!cameraRef.current || !cameraReady || mode !== "picture" || isHoldRecording) return;
 
     isHoldRecordingRef.current = true;
     setIsHoldRecording(true);
     setIsRecording(true);
-    setCameraMode("video");
-    await waitForCameraReady();
     startTimer();
     try {
       await recordVideo();
@@ -133,7 +159,6 @@ export default function Camera() {
       isHoldRecordingRef.current = false;
       setIsHoldRecording(false);
       setIsRecording(false);
-      setCameraMode("picture");
       stopTimer();
     }
   }
@@ -145,7 +170,7 @@ export default function Camera() {
     setIsRecording(false);
     stopTimer();
     openEditor("", "video", true);
-    cameraRef.current?.stopRecording();
+    cameraRef.current?.stopRecording().catch(() => {});
   }
 
   async function handleGallery() {
@@ -174,10 +199,9 @@ export default function Camera() {
     }
   }
 
-  function handleModeChange(next: CameraMode) {
+  function handleModeChange(next: CameraCaptureMode) {
     if (isRecording) return;
     setMode(next);
-    setCameraMode(next);
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -186,11 +210,12 @@ export default function Camera() {
     <View style={s.root}>
       <CameraViewfinder
         cameraRef={cameraRef}
-        facing={facing}
-        mode={cameraMode}
+        device={device}
+        format={format}
+        fps={fps}
+        isActive={cameraActive}
         isRecording={isRecording}
-        videoQuality={VIDEO_RECORD_QUALITY[videoQuality]}
-        onCameraReady={handleCameraReady}
+        onInitialized={() => setCameraReady(true)}
         onClose={() => router.back()}
         onOpenNativeCamera={handleNativeCamera}
       />

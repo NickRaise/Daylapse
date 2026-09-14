@@ -43,12 +43,12 @@
       ],
       "expo-font",
       [
-        "expo-camera",
+        "react-native-vision-camera",
         {
-          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera",
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone",
-          "recordAudioAndroid": true,
-          "barcodeScannerEnabled": true
+          "cameraPermissionText": "Allow $(PRODUCT_NAME) to access your camera",
+          "enableMicrophonePermission": true,
+          "microphonePermissionText": "Allow $(PRODUCT_NAME) to access your microphone",
+          "enableFrameProcessors": false
         }
       ],
       [

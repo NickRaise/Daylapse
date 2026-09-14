@@ -57,6 +57,7 @@ export default function EditorScreen() {
 
   const pendingMedia = useEditorStore((s) => s.pendingMedia);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
+  const frameFillColor = useSettingsStore((s) => s.frameFillColor);
   const lastCaptionStyle = useSettingsStore((s) => s.lastCaptionStyle);
   const lastVolume = useSettingsStore((s) => s.lastVolume);
   const lastDateStampEnabled = useSettingsStore((s) => s.lastDateStampEnabled);
@@ -109,6 +110,9 @@ export default function EditorScreen() {
     (!isVideo || activeTab === "text") && captionText.length > 0;
 
   const fitMode: FitMode = fit === "landscape" ? "cover" : "contain";
+  // Kept in sync with MediaFrame's own resolution of the same setting, so the saved file's padding matches what was shown in the preview.
+  const fillColor =
+    frameFillColor === "white" ? "#FFFFFF" : frameFillColor === "theme" ? colors.bg : "#000000";
   const hasOverlay = captionText.length > 0 || dateStampEnabled;
   const exportFrame = videoSize
     ? mediaExportFrame(frameW, frameH, videoSize.width, videoSize.height, fitMode)
@@ -126,6 +130,7 @@ export default function EditorScreen() {
     hasOverlay,
     videoSize,
     exportFrame,
+    fillColor,
     captionStyle,
     volume,
     dateStampEnabled,

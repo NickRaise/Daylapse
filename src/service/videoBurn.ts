@@ -17,6 +17,7 @@ export async function exportVideo(
   overlayUri: string | null,
   reframe: VideoReframe | null,
   outputPath: string,
+  fillColor: string,
 ): Promise<void> {
   const { FFmpegKit, ReturnCode } = await loadFFmpegKit();
 
@@ -28,7 +29,7 @@ export async function exportVideo(
     steps.push(
       offsetX <= 0 && offsetY <= 0
         ? `[scaled]crop=${width}:${height}:${-offsetX}:${-offsetY}[framed]`
-        : `[scaled]pad=${width}:${height}:${offsetX}:${offsetY}:color=black[framed]`,
+        : `[scaled]pad=${width}:${height}:${offsetX}:${offsetY}:color=${fillColor}[framed]`,
     );
     label = "framed";
   }

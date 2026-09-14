@@ -1,4 +1,3 @@
-import { CameraMode } from "expo-camera";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Pressable, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -13,13 +12,15 @@ const EMPTY_LAYOUT: ChipLayout = { x: 0, width: 0 };
 
 const LONG_PRESS_DELAY = 300; // ms before hold-to-record kicks in
 
+export type CameraCaptureMode = "picture" | "video";
+
 type Props = {
-  mode: CameraMode;
+  mode: CameraCaptureMode;
   isRecording: boolean;
   isHoldRecording: boolean;
   recordingDuration: number;
   isBusy: boolean;
-  onModeChange: (mode: CameraMode) => void;
+  onModeChange: (mode: CameraCaptureMode) => void;
   onCapture: () => void;
   onLongPressCapture: () => void;
   onReleaseCapture: () => void;

@@ -6,6 +6,7 @@ import { readStoredTheme, type ThemeName } from "@/theme";
 const settingsFile = new File(Paths.document, "app-settings.json");
 
 export type VideoQuality = "low" | "medium" | "high";
+export type FrameFillColor = "white" | "black" | "theme";
 
 type Settings = {
   // Appearance
@@ -17,6 +18,7 @@ type Settings = {
   recordingTimeLimit: number | null;
   // Editor frame
   defaultAspectRatio: AspectRatio;
+  frameFillColor: FrameFillColor;
   // Storage
   keepOriginalMedia: boolean;
   // Editor prefs — auto-saved on every save, not exposed in settings UI
@@ -34,6 +36,7 @@ type SettingsState = Settings & {
   setUseNativeCamera: (value: boolean) => Promise<void>;
   setRecordingTimeLimit: (value: number | null) => Promise<void>;
   setDefaultAspectRatio: (value: AspectRatio) => Promise<void>;
+  setFrameFillColor: (value: FrameFillColor) => Promise<void>;
   setKeepOriginalMedia: (value: boolean) => Promise<void>;
   setTheme: (value: ThemeName) => Promise<void>;
   setLastEditorPrefs: (prefs: {
@@ -51,6 +54,7 @@ const DEFAULTS: Settings = {
   useNativeCamera: false,
   recordingTimeLimit: null,
   defaultAspectRatio: "4:3",
+  frameFillColor: "black",
   keepOriginalMedia: false,
   lastDateStampEnabled: false,
   lastCaptionStyle: {
@@ -89,6 +93,7 @@ function pickSettings(state: SettingsState): Settings {
     useNativeCamera: state.useNativeCamera,
     recordingTimeLimit: state.recordingTimeLimit,
     defaultAspectRatio: state.defaultAspectRatio,
+    frameFillColor: state.frameFillColor,
     keepOriginalMedia: state.keepOriginalMedia,
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastCaptionStyle: state.lastCaptionStyle,
@@ -118,6 +123,7 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setUseNativeCamera: async (value) => persist({ useNativeCamera: value }),
     setRecordingTimeLimit: async (value) => persist({ recordingTimeLimit: value }),
     setDefaultAspectRatio: async (value) => persist({ defaultAspectRatio: value }),
+    setFrameFillColor: async (value) => persist({ frameFillColor: value }),
     setKeepOriginalMedia: async (value) => persist({ keepOriginalMedia: value }),
 
     setTheme: async (value) => persist({ theme: value }),

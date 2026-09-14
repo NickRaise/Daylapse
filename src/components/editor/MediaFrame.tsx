@@ -1,4 +1,4 @@
-import { forwardRef, useMemo } from "react";
+import { forwardRef, useEffect, useMemo } from "react";
 import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
@@ -7,9 +7,10 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { type VideoPlayer, VideoView } from "expo-video";
-import { radius } from "@/theme";
+import { makeStyles, radius, useColors } from "@/theme";
 import type { AspectRatio } from "@/types";
 import type { EditorMedia } from "@/store/editor.store";
+import useSettingsStore from "@/store/settings.store";
 
 const H_PAD = 16;
 
@@ -39,6 +40,11 @@ export const MediaFrame = forwardRef<View, Props>(function MediaFrame(
   { media, aspectRatio, fit, player, gesturesEnabled = true, children },
   ref,
 ) {
+  const colors = useColors();
+  const frameFillColor = useSettingsStore((s) => s.frameFillColor);
+  const fillColor =
+    frameFillColor === "white" ? "#FFFFFF" : frameFillColor === "theme" ? colors.bg : "#000000";
+  const s = useStyles();
   const { width: screenW } = useWindowDimensions();
   const { width: frameW, height: frameH } = frameSize(aspectRatio, screenW);
 
@@ -46,6 +52,12 @@ export const MediaFrame = forwardRef<View, Props>(function MediaFrame(
 
   const scale = useSharedValue(1);
   const savedScale = useSharedValue(1);
+
+  // Any zoom out from native "cover" scale immediately puts a stripe on the constraining axis, so 1x is the hard floor.
+  useEffect(() => {
+    scale.value = withTiming(1);
+    savedScale.value = 1;
+  }, [fit]);
 
   const pinch = useMemo(
     () =>
@@ -84,7 +96,7 @@ export const MediaFrame = forwardRef<View, Props>(function MediaFrame(
   return (
     <View
       ref={ref}
-      style={[s.frame, { width: frameW, height: frameH }]}
+      style={[s.frame, { width: frameW, height: frameH, backgroundColor: fillColor }]}
       collapsable={false}
     >
       <GestureDetector gesture={composed}>
@@ -113,9 +125,8 @@ export const MediaFrame = forwardRef<View, Props>(function MediaFrame(
   );
 });
 
-const s = StyleSheet.create({
+const useStyles = makeStyles(() => ({
   frame: {
-    backgroundColor: "#000",
     borderRadius: radius.lg,
     overflow: "hidden",
     alignSelf: "center",
@@ -126,4 +137,4 @@ const s = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(0,0,0,0.1)",
   },
-});
+}));

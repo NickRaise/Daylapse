@@ -13,7 +13,7 @@ import { ClipDurationPicker } from "@/components/editor/ClipDurationPicker";
 export type TrimRange = { start: number; end: number };
 
 const STRIP_H = 64;
-const BRACKET_W = 8;
+const BRACKET_W = 12;
 const BORDER_H = 3;
 
 type Props = {
@@ -112,8 +112,14 @@ export function TrimPanel({
             {stripW > 0 && (
               <GestureDetector gesture={blockPan}>
                 <Animated.View style={[s.block, blockStyle]}>
-                  <View style={[s.bracket, s.bracketLeft]} />
-                  <View style={[s.bracket, s.bracketRight]} />
+                  <View style={[s.bracket, s.bracketLeft]}>
+                    <View style={s.gripLine} />
+                    <View style={s.gripLine} />
+                  </View>
+                  <View style={[s.bracket, s.bracketRight]}>
+                    <View style={s.gripLine} />
+                    <View style={s.gripLine} />
+                  </View>
                   <View style={s.blockBorderTop} />
                   <View style={s.blockBorderBottom} />
                 </Animated.View>
@@ -179,9 +185,24 @@ const useStyles = makeStyles((colors) => ({
     width: BRACKET_W,
     height: STRIP_H,
     backgroundColor: colors.primary,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2.5,
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
+    shadowRadius: 3,
   },
-  bracketLeft:  { left: 0,  borderTopLeftRadius: 3,  borderBottomLeftRadius: 3 },
-  bracketRight: { right: 0, borderTopRightRadius: 3, borderBottomRightRadius: 3 },
+  bracketLeft:  { left: 0,  borderTopLeftRadius: 6,  borderBottomLeftRadius: 6 },
+  bracketRight: { right: 0, borderTopRightRadius: 6, borderBottomRightRadius: 6 },
+  gripLine: {
+    width: 2,
+    height: 18,
+    borderRadius: 1,
+    backgroundColor: "rgba(255,255,255,0.85)",
+  },
   blockBorderTop: {
     position: "absolute",
     top: 0,
@@ -189,6 +210,11 @@ const useStyles = makeStyles((colors) => ({
     right: BRACKET_W,
     height: BORDER_H,
     backgroundColor: colors.primary,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
   blockBorderBottom: {
     position: "absolute",
@@ -197,6 +223,11 @@ const useStyles = makeStyles((colors) => ({
     right: BRACKET_W,
     height: BORDER_H,
     backgroundColor: colors.primary,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
 
   needle: {

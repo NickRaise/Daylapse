@@ -21,6 +21,7 @@ type Options = {
   hasOverlay: boolean;
   videoSize: { width: number; height: number } | null;
   exportFrame: ExportFrame | null;
+  fillColor: string;
   captionStyle: CaptionStyle;
   volume: number;
   dateStampEnabled: boolean;
@@ -42,6 +43,7 @@ export function useEditorSave({
   hasOverlay,
   videoSize,
   exportFrame,
+  fillColor,
   captionStyle,
   volume,
   dateStampEnabled,
@@ -96,7 +98,7 @@ export function useEditorSave({
           })
         : null;
       const outPath = `${toFsPath(Paths.cache.uri)}/burned-${Date.now()}.mp4`;
-      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath);
+      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath, fillColor);
       return toFileUri(outPath);
     } catch (error) {
       console.error("[editor] video export failed, saving unframed:", error);

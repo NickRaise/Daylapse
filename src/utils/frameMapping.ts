@@ -19,7 +19,7 @@ export type ExportFrame = {
   scale: number;
 };
 
-function fitScale(frameW: number, frameH: number, mediaW: number, mediaH: number, fit: FitMode): number {
+export function fitScale(frameW: number, frameH: number, mediaW: number, mediaH: number, fit: FitMode): number {
   const coverScale = Math.max(frameW / mediaW, frameH / mediaH);
   const containScale = Math.min(frameW / mediaW, frameH / mediaH);
   return fit === "cover" ? coverScale : containScale;

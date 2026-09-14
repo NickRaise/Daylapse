@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import { DEFAULT_THEME, makeStyles, spacing, THEME_ORDER, useColors, type ThemeName } from "@/theme";
 import { themes } from "@/themes";
-import useSettingsStore, { VideoQuality } from "@/store/settings.store";
+import useSettingsStore, { FrameFillColor, VideoQuality } from "@/store/settings.store";
 import type { AspectRatio } from "@/types";
 
 const QUALITY_OPTIONS: { label: string; value: VideoQuality }[] = [
@@ -15,6 +15,12 @@ const ASPECT_RATIO_OPTIONS: { label: string; value: AspectRatio; desc: string }[
   { label: "4:3", value: "4:3", desc: "Standard wide" },
   { label: "1:1", value: "1:1", desc: "Square" },
   { label: "9:16", value: "9:16", desc: "Tall portrait" },
+];
+
+const FILL_COLOR_OPTIONS: { label: string; value: FrameFillColor }[] = [
+  { label: "White", value: "white" },
+  { label: "Black", value: "black" },
+  { label: "Theme", value: "theme" },
 ];
 
 const TIME_LIMIT_OPTIONS: { label: string; value: number | null }[] = [
@@ -54,6 +60,8 @@ export default function Settings() {
   const setRecordingTimeLimit = useSettingsStore((s) => s.setRecordingTimeLimit);
   const defaultAspectRatio = useSettingsStore((s) => s.defaultAspectRatio);
   const setDefaultAspectRatio = useSettingsStore((s) => s.setDefaultAspectRatio);
+  const frameFillColor = useSettingsStore((s) => s.frameFillColor);
+  const setFrameFillColor = useSettingsStore((s) => s.setFrameFillColor);
 
   return (
     <ScrollView style={s.root} contentContainerStyle={s.content}>
@@ -195,6 +203,28 @@ export default function Settings() {
                 </Text>
                 <Text style={[s.pillDesc, defaultAspectRatio === value && s.pillDescActive]}>
                   {desc}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
+        <View style={s.divider} />
+
+        <View style={s.settingBlock}>
+          <Text style={s.rowTitle}>Colour of the stripes</Text>
+          <Text style={s.rowDesc}>
+            When a moment doesn't quite fill the frame's shape, this fills the space around it.
+          </Text>
+          <View style={s.pills}>
+            {FILL_COLOR_OPTIONS.map(({ label, value }) => (
+              <Pressable
+                key={value}
+                style={[s.pill, frameFillColor === value && s.pillActive]}
+                onPress={() => setFrameFillColor(value)}
+              >
+                <Text style={[s.pillText, frameFillColor === value && s.pillTextActive]}>
+                  {label}
                 </Text>
               </Pressable>
             ))}

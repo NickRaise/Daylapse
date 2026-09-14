@@ -3,7 +3,7 @@ import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Text, View
 import { useFocusEffect } from "expo-router";
 import { File } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library/legacy";
-import Animated, { FadeIn, FadeOut, LinearTransition, ZoomIn, ZoomOut } from "react-native-reanimated";
+import Animated, { FadeIn, FadeOut, LinearTransition } from "react-native-reanimated";
 import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { fontSize, makeStyles, radius, spacing, useColors } from "@/theme";
 import { MontageRepository } from "@/repositories/montage.repository";
@@ -203,11 +203,11 @@ export default function Gallery() {
       )}
 
       {!selectionMode && (
-        <Animated.View entering={ZoomIn.duration(120)} exiting={ZoomOut.duration(90)} style={s.fab}>
+        <View style={s.fab}>
           <Pressable style={s.fabPress} onPress={() => setSheetVisible(true)}>
             <FontAwesomeFreeSolid name="plus" size={22} color={colors.textOnAccent} />
           </Pressable>
-        </Animated.View>
+        </View>
       )}
 
       <CompileSheet

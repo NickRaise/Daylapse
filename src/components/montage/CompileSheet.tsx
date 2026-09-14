@@ -16,12 +16,17 @@ type Props = {
 
 type PresetId = "month" | "year" | "custom";
 
-// Last completed month/year, not the current one — a story woven from an in-progress month would be missing its ending.
+// Defaults to the last completed month, not the current one — a story woven from an in-progress month would be missing its ending — but the current (in-progress) month is still reachable by stepping forward.
 function lastCompletedMonth(): { year: number; month: number } {
   const now = new Date();
   return now.getMonth() === 0
     ? { year: now.getFullYear() - 1, month: 11 }
     : { year: now.getFullYear(), month: now.getMonth() - 1 };
+}
+
+function currentMonth(): { year: number; month: number } {
+  const now = new Date();
+  return { year: now.getFullYear(), month: now.getMonth() };
 }
 
 function monthRange(year: number, month: number): CompileRange {
@@ -47,9 +52,9 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
   const [rangeEnd, setRangeEnd] = useState<string | null>(null);
 
   const customValid = !!rangeStart && !!rangeEnd;
-  const lastMonth = lastCompletedMonth();
-  const atLastMonth = monthPick.year === lastMonth.year && monthPick.month === lastMonth.month;
-  const atLastYear = yearPick === new Date().getFullYear() - 1;
+  const thisMonth = currentMonth();
+  const atCurrentMonth = monthPick.year === thisMonth.year && monthPick.month === thisMonth.month;
+  const atCurrentYear = yearPick === new Date().getFullYear();
 
   function stepMonth(delta: 1 | -1) {
     setMonthPick((prev) => {
@@ -62,13 +67,13 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
         month = 0;
         year += 1;
       }
-      if (year > lastMonth.year || (year === lastMonth.year && month > lastMonth.month)) return prev;
+      if (year > thisMonth.year || (year === thisMonth.year && month > thisMonth.month)) return prev;
       return { year, month };
     });
   }
 
   function stepYear(delta: 1 | -1) {
-    setYearPick((prev) => Math.min(prev + delta, new Date().getFullYear() - 1));
+    setYearPick((prev) => Math.min(prev + delta, new Date().getFullYear()));
   }
 
   // First tap starts a new range; the next tap sets its end (swapping if tapped out of order); after that, the cycle restarts.
@@ -124,8 +129,8 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
               <Pressable
                 onPress={() => stepMonth(1)}
                 hitSlop={10}
-                style={[s.navBtn, atLastMonth && s.navBtnDisabled]}
-                disabled={atLastMonth}
+                style={[s.navBtn, atCurrentMonth && s.navBtnDisabled]}
+                disabled={atCurrentMonth}
               >
                 <FontAwesomeFreeSolid name="chevron-right" size={13} color={colors.textSecondary} />
               </Pressable>
@@ -141,8 +146,8 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
               <Pressable
                 onPress={() => stepYear(1)}
                 hitSlop={10}
-                style={[s.navBtn, atLastYear && s.navBtnDisabled]}
-                disabled={atLastYear}
+                style={[s.navBtn, atCurrentYear && s.navBtnDisabled]}
+                disabled={atCurrentYear}
               >
                 <FontAwesomeFreeSolid name="chevron-right" size={13} color={colors.textSecondary} />
               </Pressable>
