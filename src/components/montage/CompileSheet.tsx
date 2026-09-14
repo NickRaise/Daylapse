@@ -16,7 +16,7 @@ type Props = {
 
 type PresetId = "month" | "year" | "custom";
 
-// Defaults to the last completed month, not the current one — a story woven from an in-progress month would be missing its ending — but the current (in-progress) month is still reachable by stepping forward.
+// Defaults to the last completed month, not the current one — a montage woven from an in-progress month would be missing its ending — but the current (in-progress) month is still reachable by stepping forward.
 function lastCompletedMonth(): { year: number; month: number } {
   const now = new Date();
   return now.getMonth() === 0
@@ -104,7 +104,7 @@ export function CompileSheet({ visible, onClose, onCompile }: Props) {
         <Pressable style={s.backdrop} onPress={onClose} />
         <View style={s.sheet}>
           <View style={s.handle} />
-          <Text style={s.title}>Weave a story</Text>
+          <Text style={s.title}>Weave a montage</Text>
 
           <View style={s.presetRow}>
             {(["month", "year", "custom"] as PresetId[]).map((p) => (

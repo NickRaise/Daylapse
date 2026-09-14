@@ -115,7 +115,7 @@ export default function Home() {
       <View style={s.quickRow}>
         <QuickAction icon="camera" label="Capture" onPress={handleQuickCapture} />
         <QuickAction icon="calendar" label="Calendar" onPress={() => router.push("/calendar")} />
-        <QuickAction icon="clapperboard" label="Stories" onPress={() => router.push("/gallery")} />
+        <QuickAction icon="clapperboard" label="Montages" onPress={() => router.push("/gallery")} />
         <QuickAction icon="pen" label="Journal" onPress={goToday} />
       </View>
 
@@ -164,7 +164,7 @@ export default function Home() {
 
       {data.montages.length > 0 && (
         <View style={s.section}>
-          <Text style={s.sectionTitle}>Your stories</Text>
+          <Text style={s.sectionTitle}>Your montages</Text>
           <View style={s.montageRow}>
             {data.montages.map((m) => (
               <MontageCard

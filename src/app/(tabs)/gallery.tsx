@@ -94,7 +94,7 @@ export default function Gallery() {
     if (!mediaPermission?.granted) {
       const result = await requestMediaPermission();
       if (!result.granted) {
-        Alert.alert("Permission needed", "Allow media access to keep your stories in your gallery.");
+        Alert.alert("Permission needed", "Allow media access to keep your montages in your gallery.");
         return;
       }
     }
@@ -106,12 +106,12 @@ export default function Gallery() {
       Alert.alert(
         "Kept safe",
         chosen.length === 1
-          ? "Your story is now in your gallery."
-          : `${chosen.length} stories are now in your gallery.`,
+          ? "Your montage is now in your gallery."
+          : `${chosen.length} montages are now in your gallery.`,
       );
     } catch (error) {
       console.error("[gallery] export failed:", error);
-      Alert.alert("Couldn't keep it", "Your stories couldn't be saved to your gallery.");
+      Alert.alert("Couldn't keep it", "Your montages couldn't be saved to your gallery.");
     } finally {
       if (aliveRef.current) setExporting(false);
     }
@@ -135,11 +135,11 @@ export default function Gallery() {
       {/* The selection bar sits on top of the header rather than replacing it, so swapping the two can't shift the grid. */}
       <View>
         <View style={s.header}>
-          <Text style={s.headerTitle}>Your stories</Text>
+          <Text style={s.headerTitle}>Your montages</Text>
           <Text style={s.headerSubtitle}>
             {montages.length === 0
-              ? "The stories you weave will live here"
-              : `${montages.length} ${montages.length === 1 ? "story" : "stories"} from your days`}
+              ? "The montages you weave will live here"
+              : `${montages.length} ${montages.length === 1 ? "montage" : "montages"} from your days`}
           </Text>
         </View>
 
@@ -172,12 +172,12 @@ export default function Gallery() {
           <View style={s.emptyIconWrap}>
             <FontAwesomeFreeSolid name="clapperboard" size={26} color={colors.primary} />
           </View>
-          <Text style={s.emptyTitle}>No stories yet</Text>
+          <Text style={s.emptyTitle}>No montages yet</Text>
           <Text style={s.emptyText}>
             Gather the days you've kept and weave them into something you can watch back.
           </Text>
           <Pressable style={s.emptyCta} onPress={() => setSheetVisible(true)}>
-            <Text style={s.emptyCtaText}>Weave your first story</Text>
+            <Text style={s.emptyCtaText}>Weave your first montage</Text>
           </Pressable>
         </View>
       ) : (
@@ -220,11 +220,11 @@ export default function Gallery() {
 
       <DeleteConfirmModal
         visible={confirmDelete}
-        title={selectedIds.length === 1 ? "Unravel this story?" : `Unravel ${selectedIds.length} stories?`}
+        title={selectedIds.length === 1 ? "Unravel this montage?" : `Unravel ${selectedIds.length} montages?`}
         body={
           singleSelected
             ? `${montageLabelText(singleSelected.dateRangeStart, singleSelected.dateRangeEnd)} will be gone for good. The days it was woven from stay safe in your entries.`
-            : "These stories will be gone for good. The days they were woven from stay safe in your entries."
+            : "These montages will be gone for good. The days they were woven from stay safe in your entries."
         }
         onConfirm={handleDeleteSelected}
         onCancel={() => setConfirmDelete(false)}
