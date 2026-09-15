@@ -5,9 +5,9 @@ import { sage, themes, type Theme, type ThemeColors } from "./themes";
 
 export type { ThemeColors } from "./themes";
 
-export type ThemeName = "sage" | "vanilla" | "blossom" | "cotton" | "dusk";
+export type ThemeName = "sage" | "vanilla" | "blossom" | "olive" | "dusk";
 
-export const THEME_ORDER: ThemeName[] = ["sage", "vanilla", "blossom", "cotton", "dusk"];
+export const THEME_ORDER: ThemeName[] = ["sage", "vanilla", "blossom", "olive", "dusk"];
 
 export const DEFAULT_THEME: ThemeName = "sage";
 

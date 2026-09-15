@@ -235,7 +235,7 @@ Five built-in colour themes, switchable live from Settings (marked Experimental 
 | **sage** (default) | Cornsilk `#FEFAE0` | Light Bronze `#D4A373` |
 | vanilla | Warm white | Warm sand |
 | blossom | Blush white | Dusty rose |
-| cotton | Pure white | Soft blue |
+| olive | Olive cream `#F2F0DE` | Deep Olive `#5B6B54` |
 | dusk | Deep navy | Warm purple |
 
 ---
