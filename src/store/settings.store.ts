@@ -25,6 +25,8 @@ type Settings = {
   reminderEnabled: boolean;
   reminderHour: number;
   reminderMinute: number;
+  // Onboarding
+  hasSeenOnboarding: boolean;
   // Editor prefs — auto-saved on every save, not exposed in settings UI
   lastDateStampEnabled: boolean;
   lastCaptionStyle: CaptionStyle;
@@ -44,6 +46,7 @@ type SettingsState = Settings & {
   setKeepOriginalMedia: (value: boolean) => Promise<void>;
   setReminderEnabled: (value: boolean) => Promise<void>;
   setReminderTime: (hour: number, minute: number) => Promise<void>;
+  setHasSeenOnboarding: (value: boolean) => Promise<void>;
   setTheme: (value: ThemeName) => Promise<void>;
   setLastEditorPrefs: (prefs: {
     captionStyle: CaptionStyle;
@@ -65,6 +68,7 @@ const DEFAULTS: Settings = {
   reminderEnabled: false,
   reminderHour: 20,
   reminderMinute: 0,
+  hasSeenOnboarding: false,
   lastDateStampEnabled: false,
   lastCaptionStyle: {
     textColor: "#FFFFFF",
@@ -107,6 +111,7 @@ function pickSettings(state: SettingsState): Settings {
     reminderEnabled: state.reminderEnabled,
     reminderHour: state.reminderHour,
     reminderMinute: state.reminderMinute,
+    hasSeenOnboarding: state.hasSeenOnboarding,
     lastDateStampEnabled: state.lastDateStampEnabled,
     lastCaptionStyle: state.lastCaptionStyle,
     lastVolume: state.lastVolume,
@@ -139,6 +144,7 @@ const useSettingsStore = create<SettingsState>((set, get) => {
     setKeepOriginalMedia: async (value) => persist({ keepOriginalMedia: value }),
     setReminderEnabled: async (value) => persist({ reminderEnabled: value }),
     setReminderTime: async (hour, minute) => persist({ reminderHour: hour, reminderMinute: minute }),
+    setHasSeenOnboarding: async (value) => persist({ hasSeenOnboarding: value }),
 
     setTheme: async (value) => persist({ theme: value }),
 

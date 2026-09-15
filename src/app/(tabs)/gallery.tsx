@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Alert, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Dimensions, Pressable, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { File } from "expo-file-system";
 import * as MediaLibrary from "expo-media-library/legacy";
@@ -14,6 +14,8 @@ import { CompileSheet, type CompileRange } from "@/components/montage/CompileShe
 import { MediaLightbox } from "@/components/day/MediaLightbox";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { compileMontage, type CompileProgress } from "@/service/montage.service";
+import { saveToDaylapseAlbum } from "@/service/gallerySave";
+import { showToast } from "@/store/toast.store";
 
 type Selected = { uri: string; type: "image" | "video" } | null;
 
@@ -94,24 +96,24 @@ export default function Gallery() {
     if (!mediaPermission?.granted) {
       const result = await requestMediaPermission();
       if (!result.granted) {
-        Alert.alert("Permission needed", "Allow media access to keep your montages in your gallery.");
+        showToast("Allow media access to keep your montages in your gallery.", "error");
         return;
       }
     }
     const chosen = montages.filter((m) => selectedIds.includes(m.id));
     setExporting(true);
     try {
-      for (const montage of chosen) await MediaLibrary.createAssetAsync(montage.outputUri);
+      for (const montage of chosen) await saveToDaylapseAlbum(montage.outputUri);
       setSelectedIds([]);
-      Alert.alert(
-        "Kept safe",
+      showToast(
         chosen.length === 1
           ? "Your montage is now in your gallery."
           : `${chosen.length} montages are now in your gallery.`,
+        "success",
       );
     } catch (error) {
       console.error("[gallery] export failed:", error);
-      Alert.alert("Couldn't keep it", "Your montages couldn't be saved to your gallery.");
+      showToast("Your montages couldn't be saved to your gallery.", "error");
     } finally {
       if (aliveRef.current) setExporting(false);
     }

@@ -3,6 +3,8 @@ import { loadFFmpegKit } from "@/service/ffmpeg";
 import { MediaRepository } from "@/repositories/media.repository";
 import { MontageRepository } from "@/repositories/montage.repository";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
+import { EXPORT_VIDEO_BITRATE } from "@/constants/media";
+import useSettingsStore from "@/store/settings.store";
 
 const montageDir = new Directory(Paths.document, "montages");
 const DEFAULT_PHOTO_SECONDS = 2;
@@ -21,12 +23,13 @@ export type CompileResult = {
 // Turns a still photo into a short silent clip so it can sit in the same timeline as real video clips.
 async function photoToClip(uri: string, seconds: number): Promise<string> {
   const { FFmpegKit, ReturnCode } = await loadFFmpegKit();
+  const bitrate = EXPORT_VIDEO_BITRATE[useSettingsStore.getState().videoQuality];
   const outPath = `${toFsPath(montageDir.uri)}/clip-${Date.now()}-${Math.random().toString(36).slice(2)}.mp4`;
   const command =
     // libx264 is GPL-only and absent from the "https" FFmpegKit package this app ships — h264_mediacodec is the OS's own hardware encoder, available regardless of package variant.
     // A silent audio track is added because react-native-video-trim's merge() assumes every clip has both video and audio streams.
     `-y -loop 1 -i "${toFsPath(uri)}" -f lavfi -i "anullsrc=channel_layout=stereo:sample_rate=48000" ` +
-    `-map 0:v:0 -map 1:a:0 -c:v h264_mediacodec -c:a aac -t ${seconds} -pix_fmt yuv420p -r 30 ` +
+    `-map 0:v:0 -map 1:a:0 -c:v h264_mediacodec -b:v ${bitrate} -c:a aac -t ${seconds} -pix_fmt yuv420p -r 30 ` +
     `-vf "scale=1080:1920:force_original_aspect_ratio=decrease,pad=1080:1920:(ow-iw)/2:(oh-ih)/2:color=black" ` +
     `-shortest ` +
     `"${outPath}"`;

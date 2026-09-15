@@ -10,7 +10,7 @@ import { CameraViewfinder } from "../../components/camera/CameraViewfinder";
 import { CameraControls, type CameraCaptureMode } from "../../components/camera/CameraControls";
 import useEditorStore from "@/store/editor.store";
 import useSettingsStore from "@/store/settings.store";
-import { PHOTO_QUALITY, VIDEO_RESOLUTION, TARGET_VIDEO_FPS } from "@/constants/media";
+import { PHOTO_QUALITY, VIDEO_RESOLUTION, TARGET_VIDEO_FPS, CAMERA_VIDEO_BITRATE } from "@/constants/media";
 import { toFileUri } from "@/utils/fileUri";
 import { useMediaPermissions } from "@/hooks/useMediaPermissions";
 import { useRecordingTimer } from "@/hooks/useRecordingTimer";
@@ -213,6 +213,7 @@ export default function Camera() {
         device={device}
         format={format}
         fps={fps}
+        videoBitRate={CAMERA_VIDEO_BITRATE[videoQuality]}
         isActive={cameraActive}
         isRecording={isRecording}
         onInitialized={() => setCameraReady(true)}

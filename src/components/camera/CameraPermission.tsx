@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image } from "expo-image";
 import { fontSize, makeStyles, radius, spacing, useColors } from "../../theme";
 
 type Props = {
@@ -10,9 +11,7 @@ export function CameraPermission({ onRequest }: Props) {
   return (
     <View style={s.root}>
       <View style={s.content}>
-        <View style={s.iconRing}>
-          <Text style={s.iconText}>◎</Text>
-        </View>
+        <Image source={require("../../../assets/images/icon.png")} style={s.logo} />
 
         <Text style={s.title}>Allow access to continue</Text>
         <Text style={s.subtitle}>
@@ -43,19 +42,11 @@ const useStyles = makeStyles((colors) => ({
     alignItems: "center",
     gap: spacing[4],
   },
-  iconRing: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.full,
-    borderWidth: 2,
-    borderColor: colors.primary,
-    justifyContent: "center",
-    alignItems: "center",
+  logo: {
+    width: 88,
+    height: 88,
+    borderRadius: radius.lg,
     marginBottom: spacing[2],
-  },
-  iconText: {
-    fontSize: fontSize["3xl"],
-    color: colors.primary,
   },
   title: {
     fontSize: fontSize.xl,

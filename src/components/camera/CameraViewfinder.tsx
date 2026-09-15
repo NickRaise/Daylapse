@@ -9,6 +9,7 @@ type Props = {
   device: CameraDevice | undefined;
   format: CameraDeviceFormat | undefined;
   fps: number;
+  videoBitRate: "low" | "normal" | "extra-high";
   isActive: boolean;
   isRecording: boolean;
   onInitialized: () => void;
@@ -21,6 +22,7 @@ export function CameraViewfinder({
   device,
   format,
   fps,
+  videoBitRate,
   isActive,
   isRecording,
   onInitialized,
@@ -46,6 +48,7 @@ export function CameraViewfinder({
             audio
             format={format}
             fps={fps}
+            videoBitRate={videoBitRate}
             onInitialized={onInitialized}
           />
         </View>

@@ -10,6 +10,8 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider, useTheme } from "@/theme";
 import { configureNotificationHandler, syncReminder } from "@/service/reminder.service";
+import { ToastHost } from "@/components/Toast";
+import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 const STACK_SCREEN_OPTIONS = { headerShown: false } as const;
 const FONTS = { Caveat: Caveat_400Regular } as const;
@@ -17,6 +19,8 @@ const FONTS = { Caveat: Caveat_400Regular } as const;
 export default function RootLayout() {
   const [fontsLoaded] = useFonts(FONTS);
   const theme = useSettingsStore((s) => s.theme);
+  const hasSeenOnboarding = useSettingsStore((s) => s.hasSeenOnboarding);
+  const setHasSeenOnboarding = useSettingsStore((s) => s.setHasSeenOnboarding);
 
   const [ready, setReady] = useState(false);
 
@@ -47,6 +51,8 @@ export default function RootLayout() {
       <GestureHandlerRootView style={{ flex: 1 }}>
         <ThemedStatusBar />
         <Stack screenOptions={STACK_SCREEN_OPTIONS} />
+        <ToastHost />
+        <OnboardingTour visible={!hasSeenOnboarding} onDone={() => setHasSeenOnboarding(true)} />
       </GestureHandlerRootView>
     </ThemeProvider>
   );

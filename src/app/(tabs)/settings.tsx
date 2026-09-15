@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 import DateTimePicker, { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import FontAwesomeFreeSolid from "@react-native-vector-icons/fontawesome-free-solid";
 import { DEFAULT_THEME, makeStyles, spacing, THEME_ORDER, useColors, type ThemeName } from "@/theme";
 import { themes } from "@/themes";
 import useSettingsStore, { FrameFillColor, VideoQuality } from "@/store/settings.store";
 import { requestReminderPermission, syncReminder } from "@/service/reminder.service";
+import { showToast } from "@/store/toast.store";
 import type { AspectRatio } from "@/types";
 
 const QUALITY_OPTIONS: { label: string; value: VideoQuality }[] = [
@@ -75,13 +77,14 @@ export default function Settings() {
   const reminderHour = useSettingsStore((s) => s.reminderHour);
   const reminderMinute = useSettingsStore((s) => s.reminderMinute);
   const setReminderTime = useSettingsStore((s) => s.setReminderTime);
+  const setHasSeenOnboarding = useSettingsStore((s) => s.setHasSeenOnboarding);
   const [showIosTimePicker, setShowIosTimePicker] = useState(false);
 
   async function handleReminderToggle(value: boolean) {
     if (value) {
       const granted = await requestReminderPermission();
       if (!granted) {
-        Alert.alert("Permission needed", "Allow notifications so Daylapse can remind you to keep today.");
+        showToast("Allow notifications so Daylapse can remind you to keep today.", "error");
         return;
       }
     }
@@ -348,6 +351,17 @@ export default function Settings() {
             thumbColor={colors.bgSurface}
           />
         </View>
+      </View>
+
+      <Text style={s.sectionLabel}>About</Text>
+      <View style={s.section}>
+        <Pressable style={s.row} onPress={() => setHasSeenOnboarding(false)}>
+          <View style={s.rowText}>
+            <Text style={s.rowTitle}>Take the tour again</Text>
+            <Text style={s.rowDesc}>A quick walk back through everything Daylapse can do.</Text>
+          </View>
+          <FontAwesomeFreeSolid name="chevron-right" size={14} color={colors.textMuted} />
+        </Pressable>
       </View>
     </ScrollView>
   );

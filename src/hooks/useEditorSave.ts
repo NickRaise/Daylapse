@@ -1,16 +1,17 @@
 import { useState } from "react";
 import { View } from "react-native";
 import { Paths } from "expo-file-system";
-import * as MediaLibrary from "expo-media-library/legacy";
 import { captureRef } from "react-native-view-shot";
 import { MediaRepository } from "@/repositories/media.repository";
 import { mediaService } from "@/service/media.service";
 import { exportVideo } from "@/service/videoBurn";
+import { saveToDaylapseAlbum } from "@/service/gallerySave";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
 import useSettingsStore from "@/store/settings.store";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
 import { isExportFrameNoop, type ExportFrame } from "@/utils/frameMapping";
+import { EXPORT_VIDEO_BITRATE } from "@/constants/media";
 import type { CaptionStyle } from "@/types";
 import type { TrimRange } from "@/components/editor/TrimPanel";
 
@@ -56,6 +57,7 @@ export function useEditorSave({
   const setPendingMedia = useEditorStore((s) => s.setPendingMedia);
   const currentEntryId = useEntryStore((s) => s.currentId);
   const saveToGallery = useSettingsStore((s) => s.saveToGallery);
+  const videoQuality = useSettingsStore((s) => s.videoQuality);
   // Disabled — raw-media duplication is not ready to ship; always treat as off regardless of the stored setting.
   const keepOriginalMedia = false;
   const setLastEditorPrefs = useSettingsStore((s) => s.setLastEditorPrefs);
@@ -98,7 +100,7 @@ export function useEditorSave({
           })
         : null;
       const outPath = `${toFsPath(Paths.cache.uri)}/burned-${Date.now()}.mp4`;
-      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath, fillColor);
+      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath, fillColor, EXPORT_VIDEO_BITRATE[videoQuality]);
       return toFileUri(outPath);
     } catch (error) {
       console.error("[editor] video export failed, saving unframed:", error);
@@ -133,7 +135,7 @@ export function useEditorSave({
       }
 
       if (saveToGallery) {
-        await MediaLibrary.createAssetAsync(localUri);
+        await saveToDaylapseAlbum(localUri);
       }
 
       if (currentEntryId !== null) {
