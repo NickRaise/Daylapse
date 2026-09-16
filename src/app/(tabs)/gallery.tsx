@@ -38,7 +38,9 @@ export default function Gallery() {
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true });
+  // Full (not write-only) access — saving into the "Daylapse" album requires reading existing
+  // albums first to decide whether to create one or add to it.
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
   const aliveRef = useRef(true);
   useEffect(() => () => {
     aliveRef.current = false;
