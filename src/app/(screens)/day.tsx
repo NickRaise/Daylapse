@@ -3,7 +3,8 @@ import { StyleSheet, Text, View } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo } from "react";
 import { parseDateKey } from "@/components/calendar/utils";
-import SuggestionSection from "@/components/sections/Suggestion";
+// TODO: SuggestionSection has no real behavior yet — re-enable once it actually suggests something.
+// import SuggestionSection from "@/components/sections/Suggestion";
 import { quotes } from "@/data/quotes";
 import { JournalEditor } from "@/components/journal/JournalEditor";
 import { MoodPicker, type Mood } from "@/components/journal/MoodPicker";
@@ -89,7 +90,7 @@ export default function DayScreen() {
 
       <View style={{ flex: 1 }} />
 
-      <SuggestionSection dateKey={dateKey} />
+      {/* <SuggestionSection dateKey={dateKey} /> */}
 
       {mediaFiles.length > 0 && <AddMediaFab onPress={handleOpenCamera} />}
 
