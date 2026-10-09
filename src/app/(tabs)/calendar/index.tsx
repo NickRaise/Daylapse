@@ -72,10 +72,12 @@ export default function CalendarScreen() {
     loadEntriesCache(startDate, endDate);
   }, []);
 
-  // Derive boolean map for MonthView — only recomputes when cache changes
+  // A bare row (opened but never filled in) shouldn't count — media is handled separately via thumbnails.
   const entries = useMemo<Record<string, boolean>>(() => {
     const map: Record<string, boolean> = {};
-    for (const k of Object.keys(entriesCache)) map[k] = true;
+    for (const [k, entry] of Object.entries(entriesCache)) {
+      if (!!entry.journal?.trim() || !!entry.mood) map[k] = true;
+    }
     return map;
   }, [entriesCache]);
 

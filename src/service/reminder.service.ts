@@ -1,5 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { EntryRepository } from "@/repositories/entry.repository";
+import { MediaRepository } from "@/repositories/media.repository";
 import { computeStreakStats } from "@/utils/streak";
 import { todayDateKey } from "@/utils/date";
 import { formatDateKey } from "@/components/calendar/utils";
@@ -60,8 +61,12 @@ export async function syncReminder(): Promise<void> {
   if (!perms.granted) return;
 
   const todayKey = todayDateKey();
-  const rows = (await EntryRepository.getEntriesByDateRange(dateKeyDaysAgo(HISTORY_DAYS), todayKey)) ?? [];
-  const stats = computeStreakStats(rows, todayKey);
+  const historyStart = dateKeyDaysAgo(HISTORY_DAYS);
+  const [rows, thumbnails] = await Promise.all([
+    EntryRepository.getEntriesByDateRange(historyStart, todayKey),
+    MediaRepository.getFirstMediaByDateRange(historyStart, todayKey),
+  ]);
+  const stats = computeStreakStats(rows ?? [], todayKey, new Set(Object.keys(thumbnails)));
   if (stats.hasTodayEntry) return;
 
   const fireDate = nextOccurrence(reminderHour, reminderMinute);

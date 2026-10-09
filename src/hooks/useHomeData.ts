@@ -60,11 +60,14 @@ export function useHomeData(): HomeData {
     ]);
 
     const rows = entries ?? [];
-    const { streak, hasTodayEntry } = computeStreakStats(rows, todayKey);
+    const datesWithMedia = new Set(Object.keys(thumbnails));
+    const { streak, hasTodayEntry, keptDates } = computeStreakStats(rows, todayKey, datesWithMedia);
 
-    // Query has no guaranteed order, so pick the max by date string (YYYY-MM-DD sorts correctly) rather than trusting row order.
-    const withJournal = rows.filter((e) => !!e.journal?.trim());
-    const pool = withJournal.length > 0 ? withJournal : rows;
+    // Only days with real content count as an entry — opening a day without adding anything shouldn't
+    // show up as kept, nor count toward the streak or crowd out a genuinely empty "latest entry".
+    const kept = rows.filter((e) => keptDates.includes(e.date));
+    const withJournal = kept.filter((e) => !!e.journal?.trim());
+    const pool = withJournal.length > 0 ? withJournal : kept;
     const latestEntry = pool.length > 0 ? pool.reduce((a, b) => (a.date > b.date ? a : b)) : null;
 
     const recentThumbnails = Object.entries(thumbnails)
@@ -80,7 +83,7 @@ export function useHomeData(): HomeData {
       todayKey,
       hasTodayEntry,
       streak,
-      totalEntries: rows.length,
+      totalEntries: keptDates.length,
       latestEntry,
       latestThumbnail,
       recentThumbnails,
