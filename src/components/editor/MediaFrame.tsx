@@ -93,32 +93,35 @@ export const MediaFrame = forwardRef<View, Props>(function MediaFrame(
     transform: [{ scale: scale.value }],
   }));
 
+  // Rounding and border live on the outer wrapper only — the inner view is what gets captured on save, so it stays a plain rectangle.
   return (
-    <View
-      ref={ref}
-      style={[s.frame, { width: frameW, height: frameH, backgroundColor: fillColor }]}
-      collapsable={false}
-    >
-      <GestureDetector gesture={composed}>
-        <Animated.View style={[StyleSheet.absoluteFill, mediaStyle]}>
-          {media.type === "photo" ? (
-            <Image
-              source={{ uri: media.uri }}
-              style={StyleSheet.absoluteFill}
-              resizeMode={contentFit}
-            />
-          ) : (
-            <VideoView
-              style={StyleSheet.absoluteFill}
-              player={player}
-              nativeControls={false}
-              contentFit={contentFit}
-            />
-          )}
-        </Animated.View>
-      </GestureDetector>
+    <View style={[s.frame, { width: frameW, height: frameH }]}>
+      <View
+        ref={ref}
+        style={{ width: frameW, height: frameH, backgroundColor: fillColor, overflow: "hidden" }}
+        collapsable={false}
+      >
+        <GestureDetector gesture={composed}>
+          <Animated.View style={[StyleSheet.absoluteFill, mediaStyle]}>
+            {media.type === "photo" ? (
+              <Image
+                source={{ uri: media.uri }}
+                style={StyleSheet.absoluteFill}
+                resizeMode={contentFit}
+              />
+            ) : (
+              <VideoView
+                style={StyleSheet.absoluteFill}
+                player={player}
+                nativeControls={false}
+                contentFit={contentFit}
+              />
+            )}
+          </Animated.View>
+        </GestureDetector>
 
-      {children}
+        {children}
+      </View>
 
       <View style={s.border} pointerEvents="none" />
     </View>

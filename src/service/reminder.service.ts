@@ -7,8 +7,19 @@ import { formatDateKey } from "@/components/calendar/utils";
 import { pickReminderMessage } from "@/service/reminderMessages";
 import useSettingsStore from "@/store/settings.store";
 
-const REMINDER_ID = "daylapse-daily-reminder";
+const LEGACY_REMINDER_ID = "daylapse-daily-reminder";
+const REMINDER_PREFIX = "daylapse-reminder-";
+const DAYS_AHEAD = 7;
 const HISTORY_DAYS = 400;
+
+const REMINDER_IDS = [
+  LEGACY_REMINDER_ID,
+  ...Array.from({ length: DAYS_AHEAD }, (_, i) => `${REMINDER_PREFIX}${i}`),
+];
+
+function daysBetween(fromKey: string, toKey: string): number {
+  return Math.round((Date.parse(`${toKey}T00:00:00`) - Date.parse(`${fromKey}T00:00:00`)) / 86_400_000);
+}
 
 let handlerConfigured = false;
 
@@ -48,11 +59,9 @@ function nextOccurrence(hour: number, minute: number): Date {
   return next;
 }
 
-// Recomputes and reschedules the one pending reminder from the current streak state. The message depends on
-// state that changes daily (streak, days away), so rather than one repeating trigger with stale copy, this is
-// called fresh on every app foreground/background and right after an entry is added for today.
+// Schedules a week of reminders ahead so they keep coming even if the app isn't opened; resynced on every foreground/background.
 export async function syncReminder(): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
+  await cancelReminder();
 
   const { reminderEnabled, reminderHour, reminderMinute } = useSettingsStore.getState();
   if (!reminderEnabled) return;
@@ -67,22 +76,33 @@ export async function syncReminder(): Promise<void> {
     MediaRepository.getFirstMediaByDateRange(historyStart, todayKey),
   ]);
   const stats = computeStreakStats(rows ?? [], todayKey, new Set(Object.keys(thumbnails)));
-  if (stats.hasTodayEntry) return;
+  const lastKept = stats.keptDates.length > 0 ? stats.keptDates[stats.keptDates.length - 1] : null;
+  const first = nextOccurrence(reminderHour, reminderMinute);
 
-  const fireDate = nextOccurrence(reminderHour, reminderMinute);
-  const message = pickReminderMessage({
-    streak: stats.streak,
-    daysSinceLastEntry: stats.daysSinceLastEntry,
-    isEvening: reminderHour >= 18,
-  });
+  for (let i = 0; i < DAYS_AHEAD; i++) {
+    const fireDate = new Date(first);
+    fireDate.setDate(first.getDate() + i);
+    const fireKey = formatDateKey(fireDate.getFullYear(), fireDate.getMonth(), fireDate.getDate());
+    if (fireKey === todayKey && stats.hasTodayEntry) continue;
 
-  await Notifications.scheduleNotificationAsync({
-    identifier: REMINDER_ID,
-    content: { title: message.title, body: message.body, sound: true },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
-  });
+    // Copy for each day assumes nothing new gets logged before it fires; the next resync corrects it if something is.
+    const daysSinceLastEntry = lastKept ? daysBetween(lastKept, fireKey) : null;
+    const message = pickReminderMessage({
+      streak: daysSinceLastEntry === 1 ? stats.streak : 0,
+      daysSinceLastEntry,
+      isEvening: reminderHour >= 18,
+    });
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${REMINDER_PREFIX}${i}`,
+      content: { title: message.title, body: message.body, sound: true },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: fireDate },
+    });
+  }
 }
 
 export async function cancelReminder(): Promise<void> {
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => {});
+  await Promise.all(
+    REMINDER_IDS.map((id) => Notifications.cancelScheduledNotificationAsync(id).catch(() => {})),
+  );
 }
