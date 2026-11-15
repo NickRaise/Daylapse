@@ -11,6 +11,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ThemeProvider, useTheme } from "@/theme";
 import { configureNotificationHandler, syncReminder } from "@/service/reminder.service";
 import { ToastHost } from "@/components/Toast";
+import { sweepStorage } from "@/service/storageCleanup";
 import { OnboardingTour } from "@/components/onboarding/OnboardingTour";
 
 const STACK_SCREEN_OPTIONS = { headerShown: false } as const;
@@ -30,12 +31,13 @@ export default function RootLayout() {
       await Promise.all([migrateDb(), useSettingsStore.getState().hydrate()]);
       setReady(true);
       syncReminder();
+      // TODO: clears the storage backlog from before the leak fixes (after v1.0.2) — remove a few releases later.
+      sweepStorage();
     };
 
     init();
 
-    // The reminder's copy depends on today's state, so it's recomputed on every app-state change
-    // rather than trusting a single far-future trigger to still be relevant when it fires.
+    // Reminder copy depends on today's state, so it's recomputed on every app-state change.
     const sub = AppState.addEventListener("change", (state) => {
       if (state === "active" || state === "background") syncReminder();
     });

@@ -3,6 +3,7 @@ import { loadFFmpegKit } from "@/service/ffmpeg";
 import { MediaRepository } from "@/repositories/media.repository";
 import { MontageRepository } from "@/repositories/montage.repository";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
+import { deleteOwnedFile, deleteScratch } from "@/service/storageCleanup";
 import { EXPORT_VIDEO_BITRATE, VIDEO_RESOLUTION } from "@/constants/media";
 import useSettingsStore from "@/store/settings.store";
 
@@ -95,42 +96,57 @@ export async function compileMontage(
   const target = await resolveTargetDims(items);
 
   const clipPaths: string[] = [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
-    onProgress?.({ current: i + 1, total: items.length, stage: "converting" });
-    try {
-      if (item.type === "video") {
-        const dims = await probeVideoDimensions(item.uri);
-        const alreadyMatches = dims && dims.width === target.width && dims.height === target.height;
-        clipPaths.push(
-          alreadyMatches ? toFsPath(item.uri) : await normalizeVideoClip(item.uri, target, bitrate),
-        );
-      } else {
-        clipPaths.push(await photoToClip(item.uri, item.duration ?? DEFAULT_PHOTO_SECONDS, target, bitrate));
+  // Clips generated just for this compile (not the user's own saved videos) — deleted once merged.
+  const generated: string[] = [];
+  let mergedPath: string | null = null;
+  try {
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      onProgress?.({ current: i + 1, total: items.length, stage: "converting" });
+      try {
+        if (item.type === "video") {
+          const dims = await probeVideoDimensions(item.uri);
+          const alreadyMatches = dims && dims.width === target.width && dims.height === target.height;
+          if (alreadyMatches) {
+            clipPaths.push(toFsPath(item.uri));
+          } else {
+            const clip = await normalizeVideoClip(item.uri, target, bitrate);
+            generated.push(clip);
+            clipPaths.push(clip);
+          }
+        } else {
+          const clip = await photoToClip(item.uri, item.duration ?? DEFAULT_PHOTO_SECONDS, target, bitrate);
+          generated.push(clip);
+          clipPaths.push(clip);
+        }
+      } catch (error) {
+        // Skip whatever fails to convert rather than losing the whole compile over one bad item.
+        console.error("[montage] skipping item that failed to prepare:", item.uri, error);
       }
-    } catch (error) {
-      // Skip whatever fails to convert rather than losing the whole compile over one bad item.
-      console.error("[montage] skipping item that failed to prepare:", item.uri, error);
     }
+
+    if (clipPaths.length === 0) return null;
+
+    onProgress?.({ current: items.length, total: items.length, stage: "merging" });
+    const { merge } = require("react-native-video-trim") as typeof import("react-native-video-trim");
+    const result = await merge(clipPaths, { outputExt: "mp4" });
+    mergedPath = result.outputPath;
+
+    const finalFile = new File(montageDir, `montage-${Date.now()}.mp4`);
+    await new File(toFileUri(result.outputPath)).copy(finalFile);
+
+    const durationSeconds = Math.round(result.duration / 1000);
+    await MontageRepository.addMontage({
+      title,
+      dateRangeStart: startDate,
+      dateRangeEnd: endDate,
+      outputUri: finalFile.uri,
+      duration: durationSeconds,
+    });
+
+    return { outputUri: finalFile.uri, duration: durationSeconds };
+  } finally {
+    for (const clip of generated) deleteOwnedFile(clip);
+    deleteScratch(mergedPath);
   }
-
-  if (clipPaths.length === 0) return null;
-
-  onProgress?.({ current: items.length, total: items.length, stage: "merging" });
-  const { merge } = require("react-native-video-trim") as typeof import("react-native-video-trim");
-  const result = await merge(clipPaths, { outputExt: "mp4" });
-
-  const finalFile = new File(montageDir, `montage-${Date.now()}.mp4`);
-  await new File(toFileUri(result.outputPath)).copy(finalFile);
-
-  const durationSeconds = Math.round(result.duration / 1000);
-  await MontageRepository.addMontage({
-    title,
-    dateRangeStart: startDate,
-    dateRangeEnd: endDate,
-    outputUri: finalFile.uri,
-    duration: durationSeconds,
-  });
-
-  return { outputUri: finalFile.uri, duration: durationSeconds };
 }

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useFocusEffect } from "expo-router";
 import { MediaRepository } from "@/repositories/media.repository";
+import { deleteOwnedFile } from "@/service/storageCleanup";
 import type { Media } from "@/db/schema";
 
 export function useEntryMedia(entryId: number | null) {
@@ -22,7 +23,12 @@ export function useEntryMedia(entryId: number | null) {
   );
 
   const handleDeleteMedia = async (id: number) => {
-    await MediaRepository.deleteMedia(id);
+    const item = mediaFiles.find((m) => m.id === id);
+    const deleted = await MediaRepository.deleteMedia(id);
+    if (deleted && item) {
+      deleteOwnedFile(item.uri);
+      deleteOwnedFile(item.rawUri);
+    }
     setMediaFiles((prev) => prev.filter((m) => m.id !== id));
   };
 

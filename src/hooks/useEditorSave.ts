@@ -9,8 +9,9 @@ import { saveToDaylapseAlbum } from "@/service/gallerySave";
 import useEditorStore from "@/store/editor.store";
 import useEntryStore from "@/store/entry.store";
 import useSettingsStore from "@/store/settings.store";
+import { deleteScratch } from "@/service/storageCleanup";
 import { toFileUri, toFsPath } from "@/utils/fileUri";
-import { isExportFrameNoop, type ExportFrame } from "@/utils/frameMapping";
+import { isExportFrameNoop, isZoomed, planExport, type ExportFrame, type Zoom } from "@/utils/frameMapping";
 import { EXPORT_VIDEO_BITRATE } from "@/constants/media";
 import type { CaptionStyle } from "@/types";
 import type { TrimRange } from "@/components/editor/TrimPanel";
@@ -22,6 +23,7 @@ type Options = {
   hasOverlay: boolean;
   videoSize: { width: number; height: number } | null;
   exportFrame: ExportFrame | null;
+  getZoom: () => Zoom;
   fillColor: string;
   captionStyle: CaptionStyle;
   volume: number;
@@ -44,6 +46,7 @@ export function useEditorSave({
   hasOverlay,
   videoSize,
   exportFrame,
+  getZoom,
   fillColor,
   captionStyle,
   volume,
@@ -85,10 +88,12 @@ export function useEditorSave({
     }
   }
 
-  // Re-frames the video to the editor frame and burns in the caption/date stamp, so the file matches the preview.
-  async function reframeAndBurn(uri: string): Promise<string> {
+  // Re-frames the video to the editor frame (including zoom/pan) and burns in the caption/date stamp, so the file matches the preview.
+  async function reframeAndBurn(uri: string, scratch: string[]): Promise<string> {
     if (!videoSize || !exportFrame) return uri;
-    const needsReframe = !isExportFrameNoop(exportFrame, videoSize.width, videoSize.height);
+    const zoom = getZoom();
+    const needsReframe =
+      isZoomed(zoom) || !isExportFrameNoop(exportFrame, videoSize.width, videoSize.height);
     if (!hasOverlay && !needsReframe) return uri;
     try {
       const overlayPng = hasOverlay
@@ -99,8 +104,11 @@ export function useEditorSave({
             height: exportFrame.height,
           })
         : null;
+      if (overlayPng) scratch.push(overlayPng);
       const outPath = `${toFsPath(Paths.cache.uri)}/burned-${Date.now()}.mp4`;
-      await exportVideo(uri, overlayPng, needsReframe ? exportFrame : null, outPath, fillColor, EXPORT_VIDEO_BITRATE[videoQuality]);
+      scratch.push(outPath);
+      const plan = needsReframe ? planExport(exportFrame, videoSize.width, videoSize.height, zoom) : null;
+      await exportVideo(uri, overlayPng, plan, outPath, fillColor, EXPORT_VIDEO_BITRATE[videoQuality]);
       return toFileUri(outPath);
     } catch (error) {
       console.error("[editor] video export failed, saving unframed:", error);
@@ -111,13 +119,16 @@ export function useEditorSave({
   async function handleSave() {
     if (!pendingMedia || isSaving) return;
     setIsSaving(true);
+    // Intermediate files made along the way; the final copy lives in the media folder, so these go once it's stored.
+    const scratch: string[] = [];
     try {
       let localUri: string;
       let rawUri: string | undefined;
 
       if (isVideo) {
         const trimmedUri = await trimIfNeeded(pendingMedia.uri);
-        const framedUri = await reframeAndBurn(trimmedUri);
+        if (trimmedUri !== pendingMedia.uri) scratch.push(trimmedUri);
+        const framedUri = await reframeAndBurn(trimmedUri, scratch);
         localUri = await mediaService.copyMedia(framedUri);
         if (keepOriginalMedia) {
           rawUri = await mediaService.copyMedia(pendingMedia.uri);
@@ -128,6 +139,7 @@ export function useEditorSave({
           quality: 0.92,
           result: "tmpfile",
         });
+        scratch.push(capturedUri);
         localUri = await mediaService.copyMedia(capturedUri);
         if (keepOriginalMedia) {
           rawUri = await mediaService.copyMedia(pendingMedia.uri);
@@ -163,6 +175,8 @@ export function useEditorSave({
       console.error("[editor] save failed:", err);
       setIsSaving(false);
       return;
+    } finally {
+      deleteScratch(...scratch);
     }
 
     onComplete();

@@ -15,6 +15,7 @@ import { MediaLightbox } from "@/components/day/MediaLightbox";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { compileMontage, type CompileProgress } from "@/service/montage.service";
 import { saveToDaylapseAlbum } from "@/service/gallerySave";
+import { deleteOwnedFile } from "@/service/storageCleanup";
 import { showToast } from "@/store/toast.store";
 
 type Selected = { uri: string; type: "image" | "video" } | null;
@@ -88,7 +89,11 @@ export default function Gallery() {
 
   async function handleDeleteSelected() {
     setConfirmDelete(false);
-    for (const id of selectedIds) await MontageRepository.deleteMontage(id);
+    for (const id of selectedIds) {
+      const montage = montages.find((m) => m.id === id);
+      const deleted = await MontageRepository.deleteMontage(id);
+      if (deleted && montage) deleteOwnedFile(montage.outputUri);
+    }
     setSelectedIds([]);
     refresh();
   }

@@ -217,7 +217,11 @@ export default function Camera() {
         isActive={cameraActive}
         isRecording={isRecording}
         onInitialized={() => setCameraReady(true)}
-        onClose={() => router.back()}
+        onClose={() => {
+          // Leaving the camera abandons any capture still waiting from a retake; dropping it deletes its temp file.
+          setPendingMedia(null);
+          router.back();
+        }}
         onOpenNativeCamera={handleNativeCamera}
       />
       <CameraControls

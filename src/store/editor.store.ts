@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { deleteScratch } from "@/service/storageCleanup";
 
 export type EditorMedia = {
   uri: string;
@@ -14,9 +15,14 @@ type EditorState = {
   setPendingMedia: (media: EditorMedia | null) => void;
 };
 
-const useEditorStore = create<EditorState>((set) => ({
+const useEditorStore = create<EditorState>((set, get) => ({
   pendingMedia: null,
-  setPendingMedia: (media) => set({ pendingMedia: media }),
+  // A capture is a temp file: once it's replaced (retake), saved (copied out) or abandoned, nothing needs it anymore.
+  setPendingMedia: (media) => {
+    const previous = get().pendingMedia?.uri;
+    set({ pendingMedia: media });
+    if (previous && previous !== media?.uri) deleteScratch(previous);
+  },
 }));
 
 export default useEditorStore;

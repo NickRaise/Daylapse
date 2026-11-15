@@ -31,6 +31,7 @@ import { useEditorVideo } from "@/hooks/useEditorVideo";
 import { useEditorFit } from "@/hooks/useEditorFit";
 import { useCaptionEditor } from "@/hooks/useCaptionEditor";
 import { useEditorSave } from "@/hooks/useEditorSave";
+import { useEditorZoom } from "@/hooks/useEditorZoom";
 import { todayDateKey } from "@/utils/date";
 import { mediaExportFrame, type FitMode } from "@/utils/frameMapping";
 import type { DateStampFormat } from "@/types";
@@ -123,6 +124,8 @@ export default function EditorScreen() {
       ? { left: captionRect.left / exportFrame.scale, top: captionRect.top / exportFrame.scale }
       : null;
 
+  const { zoom, snapshot: getZoom } = useEditorZoom();
+
   const { handleSave, isSaving } = useEditorSave({
     frameRef,
     burnOverlayRef,
@@ -130,6 +133,7 @@ export default function EditorScreen() {
     hasOverlay,
     videoSize,
     exportFrame,
+    getZoom,
     fillColor,
     captionStyle,
     volume,
@@ -175,6 +179,14 @@ export default function EditorScreen() {
             aspectRatio={defaultAspectRatio}
             fit={fit}
             player={videoPlayer}
+            mediaSize={
+              isVideo
+                ? videoSize
+                : pendingMedia.width && pendingMedia.height
+                  ? { width: pendingMedia.width, height: pendingMedia.height }
+                  : null
+            }
+            zoom={zoom}
             gesturesEnabled={!captionDragMode}
           >
             <DraggableCaption
