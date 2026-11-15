@@ -2,15 +2,14 @@ const { withAppBuildGradle, withGradleProperties } = require("@expo/config-plugi
 
 // x86/x86_64 only run on emulators and a few Chromebooks, yet cost ~50 MB; real phones are all ARM.
 const ARCHS = ["armeabi-v7a", "arm64-v8a"];
-const X86_EXCLUDES = "lib/x86/**,lib/x86_64/**";
 
-// Per-ABI APKs plus a universal ARM one, so most people download only the arm64 build.
+// One APK per ARM ABI. No universal APK: it always bundles React Native's prebuilt x86 libraries, which excludes don't strip.
 const SPLITS_BLOCK = `    splits {
         abi {
             enable true
             reset()
             include ${ARCHS.map((a) => `"${a}"`).join(", ")}
-            universalApk true
+            universalApk false
         }
     }
 `;
@@ -24,8 +23,6 @@ function setProperty(props, key, value) {
 module.exports = function withAbiSplits(config) {
   config = withGradleProperties(config, (config) => {
     setProperty(config.modResults, "reactNativeArchitectures", ARCHS.join(","));
-    // Prebuilt native libraries from dependencies (e.g. FFmpeg) ship x86 too; this strips them from every APK.
-    setProperty(config.modResults, "android.packagingOptions.excludes", X86_EXCLUDES);
     return config;
   });
 
